@@ -17,8 +17,6 @@ const EN := {
 	"+ скорость": "+ speed",
 	"Инструкция": "Manual",
 	"Рычаги": "Levers",
-	"Геймпад: стик — выбор, ←/→ — значение, A — нажать, X — пауза, Start — насос, Select — язык, LB/RB — скорость, L3 — схема.":
-		"Gamepad: stick — select, ←/→ — value, A — press, X — pause, Start — pump, Select — language, LB/RB — speed, L3 — scheme.",
 	"Клавиатура: Tab/стрелки, Enter — нажать, Пробел — пауза, P — насос, [ ] — скорость, V — схема, R — сброс, L — язык.":
 		"Keyboard: Tab/arrows, Enter — press, Space — pause, P — pump, [ ] — speed, V — scheme, R — reset, L — language.",
 	"Схема сборки": "Build scheme",

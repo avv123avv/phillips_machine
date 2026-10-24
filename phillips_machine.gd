@@ -103,9 +103,7 @@ func _draw() -> void:
 	draw_string(font, Vector2(DIVIDER_X - 324, 40), version if version == "dev" else "v" + version,
 			HORIZONTAL_ALIGNMENT_RIGHT, 300, FS_SMALL, MachineView.DIM)
 	draw_line(Vector2(DIVIDER_X, 16), Vector2(DIVIDER_X, 1064), Color(0.3, 0.32, 0.36), 2.0)
-	draw_string(font, Vector2(24, 984), I18n.t("Геймпад: стик — выбор, ←/→ — значение, A — нажать, X — пауза, Start — насос, Select — язык, LB/RB — скорость, L3 — схема."),
-			HORIZONTAL_ALIGNMENT_LEFT, DIVIDER_X - 40, FS_SMALL, MachineView.DIM)
-	draw_string(font, Vector2(24, 1012), I18n.t("Клавиатура: Tab/стрелки, Enter — нажать, Пробел — пауза, P — насос, [ ] — скорость, V — схема, R — сброс, L — язык."),
+	draw_string(font, Vector2(24, 1000), I18n.t("Клавиатура: Tab/стрелки, Enter — нажать, Пробел — пауза, P — насос, [ ] — скорость, V — схема, R — сброс, L — язык."),
 			HORIZONTAL_ALIGNMENT_LEFT, DIVIDER_X - 40, FS_SMALL, MachineView.DIM)
 	draw_string(font, Vector2(24, 1056), I18n.t("F1 / Y — инструкция: устройство машины, формулы, сценарии"),
 			HORIZONTAL_ALIGNMENT_LEFT, -1, FS_BIG, COLOR_HEAD)
