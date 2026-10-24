@@ -17,6 +17,31 @@ func _check(ok: bool, what: String) -> void:
 		printerr("  FAIL ", what)
 
 
+func _action(name: String) -> InputEventAction:
+	var e := InputEventAction.new()
+	e.action = name
+	e.pressed = true
+	return e
+
+
+## Русские строки из I18n.t("…") в исходниках и из таблиц подписей, которых нет в I18n.EN.
+func _missing_translations() -> Array:
+	var keys: Array = []
+	var re := RegEx.create_from_string(r'I18n\.t\("((?:[^"\\]|\\.)*)"\)')
+	for file in DirAccess.get_files_at("res://"):
+		if file.ends_with(".gd"):
+			for m in re.search_all(FileAccess.get_file_as_string("res://" + file)):
+				keys.append(m.get_string(1).c_unescape())
+	for d in PhillipsMachine.SLIDERS + PhillipsMachine.PRESET_BUTTONS + PhillipsMachine.MENU:
+		keys.append(d[1])
+	keys.append_array(MachineView.TANK_NAMES.values())
+	var out: Array = []
+	for k in keys:
+		if k != "English" and not I18n.EN.has(k) and k not in out:
+			out.append(k)
+	return out
+
+
 func _initialize() -> void:
 	var had_settings := FileAccess.file_exists(SETTINGS)
 	var saved_settings := FileAccess.get_file_as_string(SETTINGS) if had_settings else ""
@@ -86,23 +111,56 @@ func _initialize() -> void:
 	right.pressed = true
 	main._on_slider_input(right, main.sliders["g"], 3.0)
 	_check(is_equal_approx(main.econ.g, 73.0), "←/→ на слайдере — крупный шаг для геймпада")
-	main.pump_button.button_pressed = false
-	_check(not main.econ.pump_on and main.pump_button.text == "Насос: ВЫКЛ", "кнопка насоса")
-	main._toggle_lang()
-	_check(I18n.current() == "en" and main.pump_button.text == "Pump: OFF" and main.lang_button.text == "Русский",
+	main._press_menu("pump")
+	_check(not main.econ.pump_on and main.menu["pump"].text == "Насос: ВЫКЛ", "кнопка насоса")
+	main._press_menu("lang")
+	_check(I18n.current() == "en" and main.menu["pump"].text == "Pump: OFF" and main.menu["lang"].text == "Русский",
 			"смена языка ru → en")
-	main._toggle_lang()
-	_check(main.lang_button.text == "English", "смена языка en → ru")
-	var ev := InputEventAction.new()
-	ev.action = "toggle_pump"
-	ev.pressed = true
-	main._unhandled_input(ev)
+	main._press_menu("lang")
+	_check(main.menu["lang"].text == "English", "смена языка en → ru")
+	main._unhandled_input(_action("toggle_pump"))
 	_check(main.econ.pump_on, "действие toggle_pump (Start / P)")
 	_check(InputMap.action_has_event("toggle_pump", PhillipsMachine._joy(JOY_BUTTON_START)), "Start привязан к насосу")
+	main._press_menu("faster")
+	_check(is_equal_approx(main.speed, 2.0), "«+ скорость» ×2")
+	main._unhandled_input(_action("speed_down"))
+	_check(is_equal_approx(main.speed, 1.0), "LB / [ — скорость ÷2")
 	for i in 30:
 		await process_frame
-	_check(main.chart.data[0].size() > 0 or main.econ.time > 0.0, "симуляция идёт в _process")
+	_check(main.econ.time > 0.0, "симуляция идёт в _process")
+	main._input(_action("toggle_pause"))
+	var t_paused := main.econ.time
+	for i in 10:
+		await process_frame
+	_check(main.paused and main.econ.time == t_paused and main.menu["pause"].text == "Пуск", "пауза (Пробел / X) останавливает время")
+	main._press_menu("pause")
+	_check(not main.paused, "«Пуск» снимает паузу")
+
+	print("Инструкция")
+	main._unhandled_input(_action("toggle_help"))
+	_check(main.help.visible, "F1 / Y открывает инструкцию")
+	var ru_pages := main.help.pages.size()
+	main._input(_action("ui_right"))
+	_check(main.help.page == mini(1, ru_pages - 1), "→ листает вперёд")
+	main._input(_action("speed_down"))
+	_check(main.help.page == 0, "LB листает назад")
+	main._input(_action("toggle_pump"))
+	_check(main.econ.pump_on, "открытая инструкция забирает ввод")
+	main._input(_action("ui_cancel"))
+	_check(not main.help.visible, "Esc / B закрывает")
+	I18n.lang = "en"
+	main.set_help(true)
+	var en_pages := main.help.pages.size()
+	main.set_help(false)
+	I18n.lang = "ru"
+	_check(ru_pages > 0 and en_pages > 0, "страницы инструкции есть: ru %d, en %d" % [ru_pages, en_pages])
+	_check(FileAccess.file_exists("res://docs/instruction_ru.pdf") and FileAccess.file_exists("res://docs/instruction_en.pdf"),
+			"PDF инструкции на обоих языках в docs/")
 	main.queue_free()
+
+	print("Переводы")
+	var missing := _missing_translations()
+	_check(missing.is_empty(), "у всех строк интерфейса есть английский перевод %s" % [missing])
 
 	# Тест не должен менять сохранённый выбор языка пользователя.
 	if had_settings:

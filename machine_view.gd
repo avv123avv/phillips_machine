@@ -3,9 +3,9 @@ extends Control
 ## Схема машины: резервуары с водой, трубы с бегущим потоком, клапаны и подписи.
 ## Рисуется в координатах макета DESIGN и масштабируется под размер контрола.
 
-const DESIGN := Vector2(760, 760)
-const FS := 15
-const FS_SMALL := 13
+const DESIGN := Vector2(1160, 760)
+const FS := 22
+const FS_SMALL := 18
 
 const WATER := Color(0.22, 0.52, 0.95)
 const WATER_LIGHT := Color(0.62, 0.84, 1.0)
@@ -25,10 +25,10 @@ const COL_G := Color(0.85, 0.45, 0.95)
 
 ## Резервуар: прямоугольник в макете и ёмкость для отображения уровня.
 const TANKS := {
-	"treasury": [Rect2(100, 170, 160, 190), 500.0],
-	"idle": [Rect2(462, 300, 126, 180), 500.0],
-	"foreign": [Rect2(617, 300, 126, 180), 500.0],
-	"sump": [Rect2(110, 600, 620, 140), 700.0],
+	"treasury": [Rect2(160, 170, 220, 190), 500.0],
+	"idle": [Rect2(660, 300, 200, 180), 500.0],
+	"foreign": [Rect2(900, 300, 200, 180), 500.0],
+	"sump": [Rect2(150, 600, 950, 140), 700.0],
 }
 const TANK_NAMES := {
 	"treasury": "Казначейство",
@@ -39,18 +39,18 @@ const TANK_NAMES := {
 
 ## Трубы: ломаная в макете. Вода бежит от первой точки к последней.
 const PIPES := {
-	"pump": [Vector2(110, 715), Vector2(45, 715), Vector2(45, 50), Vector2(380, 50), Vector2(380, 120)],
-	"tax": [Vector2(380, 120), Vector2(180, 120), Vector2(180, 170)],
-	"yd": [Vector2(380, 120), Vector2(380, 230)],
-	"imp": [Vector2(380, 230), Vector2(680, 230), Vector2(680, 300)],
-	"yd2": [Vector2(380, 230), Vector2(380, 260)],
-	"sav": [Vector2(380, 260), Vector2(525, 260), Vector2(525, 300)],
-	"cons": [Vector2(380, 260), Vector2(380, 600)],
-	"gov": [Vector2(180, 360), Vector2(180, 600)],
-	"inv": [Vector2(525, 480), Vector2(525, 600)],
-	"exp": [Vector2(680, 480), Vector2(680, 600)],
+	"pump": [Vector2(150, 715), Vector2(60, 715), Vector2(60, 50), Vector2(560, 50), Vector2(560, 120)],
+	"tax": [Vector2(560, 120), Vector2(270, 120), Vector2(270, 170)],
+	"yd": [Vector2(560, 120), Vector2(560, 210)],
+	"imp": [Vector2(560, 210), Vector2(1000, 210), Vector2(1000, 300)],
+	"yd2": [Vector2(560, 210), Vector2(560, 275)],
+	"sav": [Vector2(560, 275), Vector2(760, 275), Vector2(760, 300)],
+	"cons": [Vector2(560, 275), Vector2(560, 600)],
+	"gov": [Vector2(270, 360), Vector2(270, 600)],
+	"inv": [Vector2(760, 480), Vector2(760, 600)],
+	"exp": [Vector2(1000, 480), Vector2(1000, 600)],
 }
-const PUMP_POS := Vector2(45, 400)
+const PUMP_POS := Vector2(60, 400)
 const DOT_SPACING := 22.0
 
 var econ: Economy
@@ -96,24 +96,24 @@ func _draw() -> void:
 	_draw_pump(font)
 
 	# Клапаны: открытие 0..1 показано поворотом заслонки.
-	_draw_valve(font, Vector2(290, 120), econ.t / 0.6, "t = %.2f" % econ.t, Vector2(-30, 30))
-	_draw_valve(font, Vector2(600, 230), econ.m / 0.5, "m = %.2f" % econ.m, Vector2(-30, -20))
-	_draw_valve(font, Vector2(455, 260), econ.s / 0.5, "s = %.2f" % econ.s, Vector2(-30, 32))
-	_draw_valve(font, Vector2(180, 480), econ.g / 120.0, "G = %.0f" % econ.g, Vector2(16, 5))
-	_draw_valve(font, Vector2(525, 540), econ.investment_demand() / Economy.INV_MAX,
-			"r = %.1f%%" % econ.r, Vector2(16, 5))
-	_draw_valve(font, Vector2(680, 540), econ.x / 100.0, "X = %.0f" % econ.x, Vector2(-70, -16))
+	_draw_valve(font, Vector2(440, 120), econ.t / 0.6, "t = %.2f" % econ.t, Vector2(-30, 36))
+	_draw_valve(font, Vector2(880, 210), econ.m / 0.5, "m = %.2f" % econ.m, Vector2(16, 32))
+	_draw_valve(font, Vector2(700, 275), econ.s / 0.5, "s = %.2f" % econ.s, Vector2(-30, -16))
+	_draw_valve(font, Vector2(270, 480), econ.g / 120.0, "G = %.0f" % econ.g, Vector2(18, 7))
+	_draw_valve(font, Vector2(760, 540), econ.investment_demand() / Economy.INV_MAX,
+			"r = %.1f%%" % econ.r, Vector2(18, 7))
+	_draw_valve(font, Vector2(1000, 540), econ.x / 100.0, "X = %.0f" % econ.x, Vector2(18, 7))
 
 	# Подписи потоков
-	_label(font, Vector2(150, 40), "Y = %.1f" % econ.y, COL_Y, FS)
-	_label(font, Vector2(190, 110), "T = %.1f" % econ.tax, TEXT, FS_SMALL)
-	_label(font, Vector2(390, 180), "Yd = %.1f" % econ.yd, TEXT, FS_SMALL)
-	_label(font, Vector2(395, 222), "M = %.1f" % econ.imp, TEXT, FS_SMALL)
-	_label(font, Vector2(300, 292), "S = %.1f" % econ.sav, TEXT, FS_SMALL)
-	_label(font, Vector2(390, 430), "C = %.1f" % econ.cons, COL_C, FS)
-	_label(font, Vector2(190, 420), "G = %.1f" % econ.gov, COL_G, FS)
-	_label(font, Vector2(535, 590), "I = %.1f" % econ.inv, COL_I, FS)
-	_label(font, Vector2(690, 590), "X = %.1f" % econ.exp_, TEXT, FS_SMALL)
+	_label(font, Vector2(300, 40), "Y = %.1f" % econ.y, COL_Y, FS)
+	_label(font, Vector2(300, 108), "T = %.1f" % econ.tax, TEXT, FS_SMALL)
+	_label(font, Vector2(575, 165), "Yd = %.1f" % econ.yd, TEXT, FS_SMALL)
+	_label(font, Vector2(575, 200), "M = %.1f" % econ.imp, TEXT, FS_SMALL)
+	_label(font, Vector2(575, 265), "S = %.1f" % econ.sav, TEXT, FS_SMALL)
+	_label(font, Vector2(440, 440), "C = %.1f" % econ.cons, COL_C, FS)
+	_label(font, Vector2(285, 420), "G = %.1f" % econ.gov, COL_G, FS)
+	_label(font, Vector2(775, 588), "I = %.1f" % econ.inv, COL_I, FS)
+	_label(font, Vector2(1015, 588), "X = %.1f" % econ.exp_, TEXT, FS_SMALL)
 
 	# Сводка
 	var lines := [
@@ -124,11 +124,11 @@ func _draw() -> void:
 		I18n.t("Вода всего: %.1f") % econ.total_water(),
 		I18n.t("Время: %.0f с") % econ.time,
 	]
-	var box := Rect2(475, 66, 275, 18 * lines.size() + 12)
+	var box := Rect2(770, 20, 380, 26 * lines.size() + 16)
 	draw_rect(box, Color(0.13, 0.15, 0.19))
 	draw_rect(box, Color(0.3, 0.33, 0.38), false, 1.0)
 	for i in lines.size():
-		_label(font, box.position + Vector2(10, 20 + 18 * i), lines[i], DIM, FS_SMALL)
+		_label(font, box.position + Vector2(14, 28 + 26 * i), lines[i], DIM, FS_SMALL)
 	draw_set_transform(Vector2.ZERO)
 
 
@@ -184,22 +184,22 @@ func _draw_tank(font: Font, key: String) -> void:
 		draw_colored_polygon(poly, WATER.darkened(0.15))
 	draw_rect(rect, GLASS, false, 2.5)
 	var w := rect.size.x
-	draw_string(font, rect.position + Vector2(0, 18), I18n.t(TANK_NAMES[key]),
+	draw_string(font, rect.position + Vector2(0, 26), I18n.t(TANK_NAMES[key]),
 			HORIZONTAL_ALIGNMENT_CENTER, w, FS_SMALL, TEXT)
-	draw_string(font, rect.position + Vector2(0, 36), "%.0f" % level,
+	draw_string(font, rect.position + Vector2(0, 54), "%.0f" % level,
 			HORIZONTAL_ALIGNMENT_CENTER, w, FS, TEXT)
 
 
 func _draw_pump(font: Font) -> void:
 	var col := VALVE if econ.pump_on else OFF
-	draw_circle(PUMP_POS, 24.0, Color(0.15, 0.17, 0.21))
-	draw_arc(PUMP_POS, 24.0, 0.0, TAU, 32, col, 3.0)
+	draw_circle(PUMP_POS, 26.0, Color(0.15, 0.17, 0.21))
+	draw_arc(PUMP_POS, 26.0, 0.0, TAU, 32, col, 3.0)
 	for k in 4:
 		var a := _pump_angle + k * PI / 2.0
 		draw_line(PUMP_POS, PUMP_POS + Vector2.from_angle(a) * 18.0, col, 3.0)
-	draw_string(font, PUMP_POS + Vector2(-40, 44), I18n.t("Насос"), HORIZONTAL_ALIGNMENT_CENTER, 80, FS_SMALL, TEXT)
+	draw_string(font, PUMP_POS + Vector2(34, 6), I18n.t("Насос"), HORIZONTAL_ALIGNMENT_LEFT, -1, FS_SMALL, TEXT)
 	if not econ.pump_on:
-		draw_string(font, PUMP_POS + Vector2(-40, 60), I18n.t("ВЫКЛ"), HORIZONTAL_ALIGNMENT_CENTER, 80, FS_SMALL, OFF)
+		draw_string(font, PUMP_POS + Vector2(34, 30), I18n.t("ВЫКЛ"), HORIZONTAL_ALIGNMENT_LEFT, -1, FS_SMALL, OFF)
 
 
 func _draw_valve(font: Font, pos: Vector2, opening: float, text: String, text_off: Vector2) -> void:

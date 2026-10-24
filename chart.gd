@@ -3,8 +3,8 @@ extends Control
 ## График Y, C, I, G во времени: скользящее окно последних MAX_POINTS отсчётов.
 
 const MAX_POINTS := 240
-const FS := 13
-const PAD := Vector2(40, 24)
+const FS := 20
+const PAD := Vector2(52, 50)
 const SERIES := [
 	["Y", MachineView.COL_Y],
 	["C", MachineView.COL_C],
@@ -40,17 +40,17 @@ func _draw() -> void:
 	var r := Rect2(Vector2.ZERO, size)
 	draw_rect(r, Color(0.11, 0.13, 0.17))
 	draw_rect(r, Color(0.3, 0.33, 0.38), false, 1.0)
-	draw_string(font, Vector2(8, 16), I18n.t("Динамика потоков, ед/с"), HORIZONTAL_ALIGNMENT_LEFT, -1, FS, MachineView.TEXT)
-	draw_string(font, Vector2(0, size.y - 6), I18n.t("последние %.0f с") % (MAX_POINTS * sample_interval),
+	draw_string(font, Vector2(10, 24), I18n.t("Динамика потоков, ед/с"), HORIZONTAL_ALIGNMENT_LEFT, -1, FS, MachineView.TEXT)
+	draw_string(font, Vector2(0, size.y - 8), I18n.t("последние %.0f с") % (MAX_POINTS * sample_interval),
 			HORIZONTAL_ALIGNMENT_RIGHT, size.x - 8, FS, MachineView.DIM)
 	# Легенда
-	var lx := size.x - 8 - 44 * SERIES.size()
+	var lx := size.x - 10 - 58 * SERIES.size()
 	for i in SERIES.size():
-		var p := Vector2(lx + 44 * i, 12)
-		draw_rect(Rect2(p, Vector2(14, 4)), SERIES[i][1])
-		draw_string(font, p + Vector2(18, 6), SERIES[i][0], HORIZONTAL_ALIGNMENT_LEFT, -1, FS, SERIES[i][1])
+		var p := Vector2(lx + 58 * i, 14)
+		draw_rect(Rect2(p, Vector2(18, 5)), SERIES[i][1])
+		draw_string(font, p + Vector2(23, 9), SERIES[i][0], HORIZONTAL_ALIGNMENT_LEFT, -1, FS, SERIES[i][1])
 
-	var plot := Rect2(PAD.x, PAD.y, size.x - PAD.x - 8, size.y - PAD.y - 22)
+	var plot := Rect2(PAD.x, PAD.y, size.x - PAD.x - 8, size.y - PAD.y - 32)
 	var vmax := 10.0
 	for s in data:
 		for v in s:

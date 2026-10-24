@@ -8,9 +8,25 @@ const LANGS: PackedStringArray = ["ru", "en"]
 const SETTINGS_PATH := "user://settings.cfg"
 
 const EN := {
+	# phillips_machine.gd — статус и меню
+	"t = %.0f с    скорость ×%s    Y = %.1f%s": "t = %.0f s    speed ×%s    Y = %.1f%s",
+	"    [ПАУЗА]": "    [PAUSED]",
+	"Пауза": "Pause",
+	"Пуск": "Run",
+	"− скорость": "− speed",
+	"+ скорость": "+ speed",
+	"Инструкция": "Manual",
+	"Рычаги": "Levers",
+	"Геймпад: стик — выбор, ←/→ — значение, A — нажать, X — пауза, Start — насос, Select — язык, LB/RB — скорость.":
+		"Gamepad: stick — select, ←/→ — value, A — press, X — pause, Start — pump, Select — language, LB/RB — speed.",
+	"Клавиатура: Tab/стрелки, Enter — нажать, Пробел — пауза, P — насос, [ ] — скорость, R — сброс, L — язык.":
+		"Keyboard: Tab/arrows, Enter — press, Space — pause, P — pump, [ ] — speed, R — reset, L — language.",
+	"F1 / Y — инструкция: устройство машины, формулы, сценарии": "F1 / Y — manual: how the machine works, formulas, scenarios",
+	# help_overlay.gd
+	"Нет страниц инструкции — запустите docs/build_instruction.py": "No manual pages — run docs/build_instruction.py",
+	"стр. %d / %d     ← → / LB RB листать     O открыть PDF     F1 / Esc / B закрыть":
+		"page %d / %d     ← → / LB RB flip     O open PDF     F1 / Esc / B close",
 	# phillips_machine.gd — панель
-	"Машина Филлипса (MONIAC)": "Phillips Machine (MONIAC)",
-	"English": "Русский",
 	"Налоговая ставка t": "Tax rate t",
 	"Склонность к сбережению s": "Propensity to save s",
 	"Склонность к импорту m": "Propensity to import m",
@@ -25,10 +41,6 @@ const EN := {
 	"Жёсткая экономия": "Austerity",
 	"Рецессия": "Recession",
 	"Сброс": "Reset",
-	"Геймпад: крестовина/стик — выбор, ←/→ — значение, A — нажать, Start — насос, Select — язык, LB/RB — скорость.":
-		"Gamepad: D-pad/stick — select, ←/→ — value, A — press, Start — pump, Select — language, LB/RB — speed.",
-	"Клавиатура: Tab/стрелки, P — насос, L — язык, [ ] — скорость, R — сброс.":
-		"Keyboard: Tab/arrows, P — pump, L — language, [ ] — speed, R — reset.",
 	# machine_view.gd — схема
 	"Казначейство": "Treasury",
 	"Сбережения": "Idle balances",
