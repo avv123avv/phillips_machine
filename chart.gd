@@ -4,12 +4,14 @@ extends Control
 
 const MAX_POINTS := 240
 const FS := 20
-const PAD := Vector2(52, 50)
+const FS_LEGEND := 18
+const PAD := Vector2(52, 110)
+## Серия: буква, цвет и что она значит в жизни (легенда в две колонки под заголовком).
 const SERIES := [
-	["Y", MachineView.COL_Y],
-	["C", MachineView.COL_C],
-	["I", MachineView.COL_I],
-	["G", MachineView.COL_G],
+	["Y", MachineView.COL_Y, "доход страны (ВВП)"],
+	["C", MachineView.COL_C, "покупки населения"],
+	["I", MachineView.COL_I, "вложения бизнеса"],
+	["G", MachineView.COL_G, "расходы государства"],
 ]
 
 var sample_interval := 0.25
@@ -43,12 +45,12 @@ func _draw() -> void:
 	draw_string(font, Vector2(10, 24), I18n.t("Динамика потоков, ед/с"), HORIZONTAL_ALIGNMENT_LEFT, -1, FS, MachineView.TEXT)
 	draw_string(font, Vector2(0, size.y - 8), I18n.t("последние %.0f с") % (MAX_POINTS * sample_interval),
 			HORIZONTAL_ALIGNMENT_RIGHT, size.x - 8, FS, MachineView.DIM)
-	# Легенда
-	var lx := size.x - 10 - 58 * SERIES.size()
+	# Легенда: Y и C в первой строке, I и G во второй.
 	for i in SERIES.size():
-		var p := Vector2(lx + 58 * i, 14)
-		draw_rect(Rect2(p, Vector2(18, 5)), SERIES[i][1])
-		draw_string(font, p + Vector2(23, 9), SERIES[i][0], HORIZONTAL_ALIGNMENT_LEFT, -1, FS, SERIES[i][1])
+		var p := Vector2(12 + (size.x * 0.5 - 6) * (i % 2), 44 + 26 * (i / 2))
+		draw_rect(Rect2(p + Vector2(0, 2), Vector2(18, 5)), SERIES[i][1])
+		draw_string(font, p + Vector2(24, 11), "%s — %s" % [SERIES[i][0], I18n.t(SERIES[i][2])],
+				HORIZONTAL_ALIGNMENT_LEFT, size.x * 0.5 - 40, FS_LEGEND, SERIES[i][1])
 
 	var plot := Rect2(PAD.x, PAD.y, size.x - PAD.x - 8, size.y - PAD.y - 32)
 	var vmax := 10.0

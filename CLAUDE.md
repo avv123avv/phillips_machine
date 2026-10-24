@@ -14,7 +14,7 @@ tanks for Treasury, idle balances (savings), foreign balances and the expenditur
 - UI is bilingual (ru/en) via `i18n.gd` (`class_name I18n`): write UI strings in Russian wrapped in
   `I18n.t("…")` and add the English to `I18n.EN` (missing keys fall back to Russian). Language:
   `-- --lang=en|ru` launch arg > `user://settings.cfg` > system locale; toggled by L / Select / the language button.
-  A test scans the sources for `I18n.t("…")` (plus `SLIDERS`, `PRESET_BUTTONS`, `MENU`, `TANK_NAMES`) and fails on missing EN keys.
+  A test scans the sources for `I18n.t("…")` (plus `SLIDERS`, `PRESET_BUTTONS`, `MENU`, `TANK_NAMES`, `FlowChart.SERIES`) and fails on missing EN keys.
   After adding a new `class_name`, run `godot --headless --path . --import` to refresh the class cache.
 
 ## Structure
@@ -26,7 +26,8 @@ tanks for Treasury, idle balances (savings), foreign balances and the expenditur
 - `economy.gd` (`class_name Economy`) — the model only, no rendering; tested headless.
 - `machine_view.gd` (`class_name MachineView`) — `_draw()` of tanks, pipes with moving dots, valves, labels,
   in design coordinates `DESIGN` (1160×760) scaled to the control (≈1.09); its font sizes are in design units. Series colours `COL_*` are shared with the chart.
-- `chart.gd` (`class_name FlowChart`) — Y, C, I, G over the last `MAX_POINTS` samples.
+- `chart.gd` (`class_name FlowChart`) — Y, C, I, G over the last `MAX_POINTS` samples; legend in two columns under the
+  title says what each letter means in real life (`SERIES[i][2]`).
 - `docs/screen_<lang>.png` — README and manual title screenshots:
   `godot --path . --write-movie x.png --fixed-fps 10 --quit-after 200 -- --lang=en`, take the last frame.
 - `docs/build_instruction.py` → `docs/instruction_{ru,en}.pdf` (A4 landscape) + `docs/pages/<lang>/page_N.png` (1054 px high).

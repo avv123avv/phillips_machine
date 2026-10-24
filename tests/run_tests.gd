@@ -34,6 +34,8 @@ func _missing_translations() -> Array:
 				keys.append(m.get_string(1).c_unescape())
 	for d in PhillipsMachine.SLIDERS + PhillipsMachine.PRESET_BUTTONS + PhillipsMachine.MENU:
 		keys.append(d[1])
+	for d in FlowChart.SERIES:
+		keys.append(d[2])
 	keys.append_array(MachineView.TANK_NAMES.values())
 	var out: Array = []
 	for k in keys:

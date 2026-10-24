@@ -57,6 +57,10 @@ const EN := {
 	# chart.gd
 	"Динамика потоков, ед/с": "Flows over time, units/s",
 	"последние %.0f с": "last %.0f s",
+	"доход страны (ВВП)": "national income (GDP)",
+	"покупки населения": "consumer spending",
+	"вложения бизнеса": "business investment",
+	"расходы государства": "government spending",
 }
 
 static var lang := ""
