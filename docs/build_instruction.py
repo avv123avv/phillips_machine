@@ -17,7 +17,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import (CondPageBreak, Image, PageBreak, Paragraph,
+from reportlab.platypus import (CondPageBreak, Image, PageBreak, Paragraph, Preformatted,
                                 SimpleDocTemplate, Spacer, Table, TableStyle)
 
 DOCS = Path(__file__).resolve().parent
@@ -31,6 +31,8 @@ FONTS = Path("C:/Windows/Fonts")
 pdfmetrics.registerFont(TTFont("Arial", str(FONTS / "arial.ttf")))
 pdfmetrics.registerFont(TTFont("Arial-Bold", str(FONTS / "arialbd.ttf")))
 pdfmetrics.registerFontFamily("Arial", normal="Arial", bold="Arial-Bold")
+# Моноширинный с кириллицей — для листинга скетча (комментарии в нём по-русски).
+pdfmetrics.registerFont(TTFont("Mono", str(FONTS / "consola.ttf")))
 
 INK = colors.HexColor("#1f2328")
 ACCENT = colors.HexColor("#2f6db5")
@@ -48,6 +50,8 @@ subtitle = ParagraphStyle("subtitle", parent=body, fontSize=14 * FONT_K, leading
 caption = ParagraphStyle("caption", parent=small, alignment=TA_CENTER, textColor=colors.HexColor("#555"))
 # Текст задач: чуть плотнее, чтобы каждая помещалась на страницу.
 tight = ParagraphStyle("tight", parent=body, fontSize=11.5 * FONT_K, leading=14.5 * FONT_K, spaceAfter=4 * FONT_K)
+code = ParagraphStyle("code", parent=body, fontName="Mono", fontSize=7.5 * FONT_K, leading=9 * FONT_K, spaceAfter=0,
+					  backColor=colors.HexColor("#f6f8fa"), borderPadding=4)
 formula = ParagraphStyle("formula", parent=body, alignment=TA_CENTER, fontName="Arial-Bold", spaceBefore=2 * FONT_K, spaceAfter=6 * FONT_K)
 
 # Текущий язык сборки; меняется в main.
@@ -461,6 +465,12 @@ SUMP_DEAD_ML = 500.0
 WEIR_MM = 60.0
 VALVE_DROP_CM = 40.0
 PUMP_MAX_L_H = 240.0
+SKETCH = DOCS.parent / "diy" / "phillips_pump" / "phillips_pump.ino"
+SKETCH_URL = "https://github.com/avv123avv/phillips_machine/blob/main/diy/phillips_pump/phillips_pump.ino"
+
+
+def sketch_link() -> str:
+	return f'<a href="{SKETCH_URL}" color="#2f6db5"><u>{SKETCH_URL.removeprefix("https://")}</u></a>'
 
 
 def ml_min(units_per_s: float) -> float:
@@ -581,12 +591,14 @@ def diy_section() -> list:
 			"tank level, as in the model: Y = 0.5 · level. Arduino does this: the HC-SR04 measures the level and the "
 			f"MOSFET changes the pump PWM. On the rig Y [ml/s] = 0.05 · water [ml] — e.g. about {f(y_l_h, 0)} L/h with the "
 			"default levers.")),
-		p(L("Скетч — <b>diy/phillips_pump/phillips_pump.ino</b>. Он раз в секунду пишет в порт строку "
+		p(L("Скетч — <b>phillips_pump.ino</b>: в архиве с программой (папка phillips_pump), на GitHub — "
+			f"{sketch_link()}, полный текст — в приложении в конце инструкции. Он раз в секунду пишет в порт строку "
 			"t_s, level_cm, water_ml, y_ml_s, pwm — её можно открыть в «Плоттере по последовательному порту» Arduino IDE. "
 			"Кнопка на D2 включает и выключает насос.",
-			"The sketch is <b>diy/phillips_pump/phillips_pump.ino</b>. Once a second it writes t_s, level_cm, water_ml, "
-			"y_ml_s, pwm to the serial port — open it in the Arduino IDE Serial Plotter. A button on D2 turns the pump "
-			"on and off.")),
+			"The sketch is <b>phillips_pump.ino</b>: in the program archive (phillips_pump folder), on GitHub — "
+			f"{sketch_link()}, full text in the appendix at the end of this manual. Once a second it writes t_s, level_cm, "
+			"water_ml, y_ml_s, pwm to the serial port — open it in the Arduino IDE Serial Plotter. A button on D2 turns "
+			"the pump on and off.")),
 		p(L(f"Под помпой всегда должно оставаться {f(SUMP_DEAD_ML, 0)} мл «мёртвого» запаса, иначе она хватает воздух. "
 			"В модель он не входит: скетч вычитает его из объёма.",
 			f"There must always be a {f(SUMP_DEAD_ML, 0)} ml “dead” reserve under the pump, otherwise it sucks air. "
@@ -627,6 +639,22 @@ def diy_section() -> list:
 		]),
 	]
 	return s
+
+
+def sketch_appendix() -> list:
+	return [
+		PageBreak(),
+		p(L("Приложение. Скетч Arduino для насоса", "Appendix. Arduino pump sketch"), h1),
+		p(L(f"Файл phillips_pump.ino — в архиве с программой и на GitHub: {sketch_link()}. В Arduino IDE файл должен "
+			"лежать в папке с тем же именем: phillips_pump/phillips_pump.ino. Перед загрузкой подставьте "
+			"SENSOR_TO_BOTTOM_CM, PUMP_MAX_ML_S и PWM_MIN (раздел «Калибровка и первый запуск»).",
+			f"File phillips_pump.ino is in the program archive and on GitHub: {sketch_link()}. In the Arduino IDE the file "
+			"must be in a folder with the same name: phillips_pump/phillips_pump.ino. Before uploading, set "
+			"SENSOR_TO_BOTTOM_CM, PUMP_MAX_ML_S and PWM_MIN (section “Calibration and first run”). "
+			"Comments in the sketch are in Russian."), small),
+		Spacer(1, 2 * mm),
+		Preformatted(SKETCH.read_text(encoding="utf-8").rstrip(), code),
+	]
 
 
 def footer(canvas, doc) -> None:
@@ -898,6 +926,7 @@ def story() -> list:
 			"interest rate depended on the idle-balances level; here r is set by a lever."), small),
 		*problems(),
 		*diy_section(),
+		*sketch_appendix(),
 	]
 	return s
 

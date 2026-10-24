@@ -153,6 +153,8 @@ func _initialize() -> void:
 	main._unhandled_input(_action("toggle_view"))
 	_check(not main.diy.visible and main.view.visible, "V / L3 — обратно к схеме машины")
 	_check(InputMap.action_has_event("toggle_view", PhillipsMachine._joy(JOY_BUTTON_LEFT_STICK)), "L3 привязан к схеме")
+	# Скетч кладётся в релизный архив и печатается приложением к инструкции.
+	_check(FileAccess.file_exists("res://diy/phillips_pump/phillips_pump.ino"), "скетч Arduino на месте")
 
 	print("Инструкция")
 	main._unhandled_input(_action("toggle_help"))

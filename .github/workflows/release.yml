@@ -67,8 +67,10 @@ jobs:
           VERSION: ${{ steps.ver.outputs.version }}
         run: |
           set -euo pipefail
-          mkdir -p dist/pkg
+          mkdir -p dist/pkg/phillips_pump
           cp build/PhillipsMachine.exe docs/instruction_ru.pdf docs/instruction_en.pdf README.md dist/pkg/
+          # Скетч Arduino — в папке с тем же именем, как требует Arduino IDE.
+          cp diy/phillips_pump/phillips_pump.ino dist/pkg/phillips_pump/
           (cd dist/pkg && zip -q -r "../PhillipsMachine-v${VERSION}-windows-x64.zip" .)
           ls -lh dist/
 

@@ -32,6 +32,8 @@ tanks for Treasury, idle balances (savings), foreign balances and the expenditur
   `flow_ml_min`, `plate_mm`, `pump_pwm`, `head_ratio` — mirrored in `docs/build_instruction.py` (section 8) and
   `diy/phillips_pump/phillips_pump.ino` (sump area, dead volume, `PUMP_K_PER_S` = PUMP_K / TIME_SCALE). Part numbers
   1–12 on the drawing = parts table in the manual; keep them in sync. Screenshot: `docs/diy_<lang>.png` (`--view=diy`).
+  The manual links the sketch on GitHub (`SKETCH_URL`, main branch) and prints it in full as the last appendix
+  (`sketch_appendix()`, Consolas) — rerun the script after editing the .ino. Release zip has it in `phillips_pump/`.
 - `chart.gd` (`class_name FlowChart`) — Y, C, I, G over the last `MAX_POINTS` samples; legend in two columns under the
   title says what each letter means in real life (`SERIES[i][2]`).
 - `docs/screen_<lang>.png` — README and manual title screenshots:
@@ -69,7 +71,7 @@ Actions created in `_setup_input()`: `toggle_pause` (X, Space — handled in `_i
   then `.github/scripts/test_and_build.sh`: import → tests → `--export-release "Windows Desktop"`.
 - `.github/workflows/release.yml` — when a PR is **merged into `main`**: bumps the version from the latest
   `vX.Y.Z` tag, writes it into `application/config/version`, re-runs tests + export, zips
-  `PhillipsMachine.exe` + both PDFs + README, creates tag `vX.Y.Z` and a GitHub Release. First release is `v0.1.0`.
+  `PhillipsMachine.exe` + both PDFs + README + `phillips_pump/phillips_pump.ino`, creates tag `vX.Y.Z` and a GitHub Release. First release is `v0.1.0`.
 
 ### Release rules for Claude
 - Never create tags or releases by hand and never edit `config/version` in `project.godot` — it stays `"dev"`.

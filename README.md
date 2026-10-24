@@ -81,7 +81,8 @@ and ml). Scale: 1 water unit = 2 ml, 1 model second = 10 rig seconds, 2.5 L of w
 
 Section 8 of the manual has the parts list, how to make the splitters, valve and pump calibration tables and the
 first run. The Arduino sketch is [`diy/phillips_pump/phillips_pump.ino`](diy/phillips_pump/phillips_pump.ino)
-(HC-SR04 level sensor, MOSFET PWM, CSV log on the serial port).
+(HC-SR04 level sensor, MOSFET PWM, CSV log on the serial port). It is also in the release zip (`phillips_pump/`)
+and printed in full in the manual's appendix.
 
 ### Tests
 
@@ -173,7 +174,8 @@ python docs/build_instruction.py
 
 В разделе 8 инструкции — список деталей, как сделать делители, таблицы калибровки краников и помпы, первый
 запуск. Скетч Arduino — [`diy/phillips_pump/phillips_pump.ino`](diy/phillips_pump/phillips_pump.ino)
-(датчик уровня HC-SR04, ШИМ через MOSFET, CSV в последовательный порт).
+(датчик уровня HC-SR04, ШИМ через MOSFET, CSV в последовательный порт). Он же лежит в архиве релиза
+(`phillips_pump/`) и целиком напечатан в приложении к инструкции.
 
 ### Тесты
 
