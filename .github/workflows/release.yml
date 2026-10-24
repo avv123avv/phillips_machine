@@ -1,0 +1,100 @@
+name: Release
+
+# Слияние PR в main → новая версия: тег vX.Y.Z и GitHub Release со сборкой Windows.
+# Какую часть версии поднять, решают метки PR:
+#   release:major — X+1.0.0, release:minor — X.Y+1.0, без метки — X.Y.Z+1, release:none — без релиза.
+# Первый релиз (тегов ещё нет) — v0.1.0.
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+
+# Релизы строго по очереди, иначе два слияния подряд получат один номер.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    name: Сборка и релиз
+    if: github.event.pull_request.merged == true && !contains(github.event.pull_request.labels.*.name, 'release:none')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+          fetch-depth: 0
+
+      - name: Номер версии
+        id: ver
+        env:
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          set -euo pipefail
+          last=$(git tag --list 'v*.*.*' --sort=-v:refname | head -n1)
+          if [ -z "$last" ]; then
+            new=0.1.0
+          else
+            IFS=. read -r major minor patch <<< "${last#v}"
+            case ",$LABELS," in
+              *,release:major,*) major=$((major + 1)); minor=0; patch=0 ;;
+              *,release:minor,*) minor=$((minor + 1)); patch=0 ;;
+              *) patch=$((patch + 1)) ;;
+            esac
+            new="$major.$minor.$patch"
+          fi
+          echo "Предыдущая: ${last:-нет}, новая: v$new"
+          echo "version=$new" >> "$GITHUB_OUTPUT"
+
+      - uses: ./.github/actions/setup-godot
+
+      - name: Версия в проект
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          sed -i "s/^config\/version=.*/config\/version=\"$VERSION\"/" project.godot
+          grep '^config/version=' project.godot
+
+      - name: Импорт, тесты, экспорт
+        run: bash .github/scripts/test_and_build.sh
+
+      - name: Архив
+        env:
+          VERSION: ${{ steps.ver.outputs.version }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist/pkg
+          cp build/PhillipsMachine.exe README.md dist/pkg/
+          (cd dist/pkg && zip -q -r "../PhillipsMachine-v${VERSION}-windows-x64.zip" .)
+          ls -lh dist/
+
+      - name: Тег и релиз
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.ver.outputs.version }}
+          SHA: ${{ github.event.pull_request.merge_commit_sha }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+        run: |
+          set -euo pipefail
+          {
+            echo "## Что нового / What's new"
+            echo
+            echo "- ${PR_TITLE} ([#${PR_NUMBER}](${PR_URL}))"
+            echo
+            echo "## Установка / Install"
+            echo
+            echo "Скачайте \`PhillipsMachine-v${VERSION}-windows-x64.zip\`, распакуйте и запустите \`PhillipsMachine.exe\`."
+            echo "Описание модели — в README."
+            echo
+            echo "Download the zip, unpack it and run \`PhillipsMachine.exe\`. See README for the model description."
+          } > notes.md
+          gh release create "v${VERSION}" dist/*.zip \
+            --target "$SHA" \
+            --title "v${VERSION} — ${PR_TITLE}" \
+            --notes-file notes.md

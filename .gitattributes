@@ -1,0 +1,4 @@
+# Скрипты и конфиги CI запускаются на Linux — всегда LF.
+*.sh text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
