@@ -17,7 +17,7 @@ from reportlab.lib.styles import ParagraphStyle
 from reportlab.lib.units import mm
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.platypus import (CondPageBreak, Image, PageBreak, Paragraph,
+from reportlab.platypus import (CondPageBreak, Image, PageBreak, Paragraph, Preformatted,
                                 SimpleDocTemplate, Spacer, Table, TableStyle)
 
 DOCS = Path(__file__).resolve().parent
@@ -31,6 +31,8 @@ FONTS = Path("C:/Windows/Fonts")
 pdfmetrics.registerFont(TTFont("Arial", str(FONTS / "arial.ttf")))
 pdfmetrics.registerFont(TTFont("Arial-Bold", str(FONTS / "arialbd.ttf")))
 pdfmetrics.registerFontFamily("Arial", normal="Arial", bold="Arial-Bold")
+# Моноширинный с кириллицей — для листинга скетча (комментарии в нём по-русски).
+pdfmetrics.registerFont(TTFont("Mono", str(FONTS / "consola.ttf")))
 
 INK = colors.HexColor("#1f2328")
 ACCENT = colors.HexColor("#2f6db5")
@@ -48,6 +50,8 @@ subtitle = ParagraphStyle("subtitle", parent=body, fontSize=14 * FONT_K, leading
 caption = ParagraphStyle("caption", parent=small, alignment=TA_CENTER, textColor=colors.HexColor("#555"))
 # Текст задач: чуть плотнее, чтобы каждая помещалась на страницу.
 tight = ParagraphStyle("tight", parent=body, fontSize=11.5 * FONT_K, leading=14.5 * FONT_K, spaceAfter=4 * FONT_K)
+code = ParagraphStyle("code", parent=body, fontName="Mono", fontSize=7.5 * FONT_K, leading=9 * FONT_K, spaceAfter=0,
+					  backColor=colors.HexColor("#f6f8fa"), borderPadding=4)
 formula = ParagraphStyle("formula", parent=body, alignment=TA_CENTER, fontName="Arial-Bold", spaceBefore=2 * FONT_K, spaceAfter=6 * FONT_K)
 
 # Текущий язык сборки; меняется в main.
@@ -450,6 +454,209 @@ def problems() -> list:
 	return s
 
 
+# --- Сборка дома (константы — как в diy_rig.gd) -------------------------------
+
+ML_PER_UNIT = 2.0
+TIME_SCALE = 10.0
+TANK_AREA_CM2 = 125.0
+TANK_H_CM = 16.0
+SUMP_AREA_CM2 = 200.0
+SUMP_DEAD_ML = 500.0
+WEIR_MM = 60.0
+VALVE_DROP_CM = 40.0
+PUMP_MAX_L_H = 240.0
+SKETCH = DOCS.parent / "diy" / "phillips_pump" / "phillips_pump.ino"
+SKETCH_URL = "https://github.com/avv123avv/phillips_machine/blob/main/diy/phillips_pump/phillips_pump.ino"
+
+
+def sketch_link() -> str:
+	return f'<a href="{SKETCH_URL}" color="#2f6db5"><u>{SKETCH_URL.removeprefix("https://")}</u></a>'
+
+
+def ml_min(units_per_s: float) -> float:
+	return units_per_s * ML_PER_UNIT / TIME_SCALE * 60.0
+
+
+def diy_section() -> list:
+	e0 = Economy()
+	ml = L("мл", "ml")
+	head = math.sqrt((VALVE_DROP_CM + TANK_H_CM) / VALVE_DROP_CM)
+	y_l_h = ml_min(warmed_up().y) * 60 / 1000
+	s: list = [
+		PageBreak(),
+		p(L("8. Как собрать машину дома", "8. Building the machine at home"), h1),
+		p(L("Кнопка «Схема сборки» (V, L3 на геймпаде) показывает стенд на щите: детали пронумерованы, а рядом — "
+			"те же рычаги в физических величинах: положение пластин делителей в мм, расход краников в мл/мин, "
+			"ШИМ помпы, уровни в см и мл. Модель та же — значит, стенд можно настраивать прямо по экрану.",
+			"The “Build scheme” button (V, L3 on the gamepad) shows the rig on a board: parts are numbered, and the same "
+			"levers are shown in physical units: splitter plate positions in mm, valve flows in ml/min, the pump PWM, "
+			"levels in cm and ml. The model is the same, so you can set up the rig straight from the screen.")),
+		Image(str(DOCS / f"diy_{LANG}.png"), width=170 * mm, height=170 * mm * 1080 / 1920),
+		CondPageBreak(50 * mm),
+		p(L("Масштаб", "Scale"), h2),
+		table([
+			[L("Модель", "Model"), L("Стенд", "Rig"), L("Пример", "Example")],
+			[L("1 единица воды", "1 water unit"), f"{f(ML_PER_UNIT, 0)} {ml}", L(f"вся вода 1000 ед. = {f(1000 * ML_PER_UNIT / 1000)} л",
+			 f"all water 1000 units = {f(1000 * ML_PER_UNIT / 1000)} L")],
+			[L("1 с модели", "1 model second"), L(f"{f(TIME_SCALE, 0)} с", f"{f(TIME_SCALE, 0)} s"),
+			 L("опыт в 30 с модели = 5 минут на стенде", "a 30 s experiment = 5 minutes on the rig")],
+			[L("Поток 1 ед/с", "Flow 1 unit/s"), f"{f(ml_min(1.0), 0)} {ml}/" + L("мин", "min"),
+			 L(f"Y = 200 → {f(ml_min(200) / 1000)} л/мин = {f(ml_min(200) * 60 / 1000, 0)} л/ч",
+			   f"Y = 200 → {f(ml_min(200) / 1000)} L/min = {f(ml_min(200) * 60 / 1000, 0)} L/h")],
+			[L("Уровень в баке 2 л", "Level in a 2 L tank"), L(f"1 см = {f(TANK_AREA_CM2, 0)} {ml}", f"1 cm = {f(TANK_AREA_CM2, 0)} {ml}"),
+			 L(f"200 ед. = {f(200 * ML_PER_UNIT / TANK_AREA_CM2)} см", f"200 units = {f(200 * ML_PER_UNIT / TANK_AREA_CM2)} cm")],
+		], [60, 70, 137]),
+		Spacer(1, 2 * mm),
+		p(L("Время на стенде в 10 раз медленнее, чем в программе при скорости ×1: строка «t = … с» в программе — это "
+			"секунды модели, умножайте их на 10.",
+			"Rig time runs 10 times slower than the program at speed ×1: the “t = … s” line in the program is model "
+			"seconds, multiply them by 10.")),
+		CondPageBreak(75 * mm),
+		p(L("Детали", "Parts"), h2),
+		table([
+			["№" if LANG == "ru" else "#", L("Деталь", "Part"), L("Шт.", "Qty"), L("Примечание", "Notes")],
+			["1", L("Нижний бак, контейнер 3 л", "Bottom tank, 3 L container"), "1",
+			 L(f"дно 20 × 10 см ({f(SUMP_AREA_CM2, 0)} см²), высота ≥ 15 см", f"base 20 × 10 cm ({f(SUMP_AREA_CM2, 0)} cm²), ≥ 15 cm tall")],
+			["2", L("Бак, контейнер 2 л", "Tank, 2 L container"), "3", L("дно 12,5 × 10 см, шкала на боку", "base 12.5 × 10 cm, scale on the side")],
+			["3", L("Помпа погружная 12 В", "Submersible 12 V pump"), "1",
+			 L(f"бесщёточная, {f(PUMP_MAX_L_H, 0)}–300 л/ч, напор ≥ 3 м", f"brushless, {f(PUMP_MAX_L_H, 0)}–300 L/h, head ≥ 3 m")],
+			["4", L("Делитель t (лоток)", "Splitter t (trough)"), "1", L(f"порог {f(WEIR_MM, 0)} мм, одна пластина", f"{f(WEIR_MM, 0)} mm weir, one plate")],
+			["5", L("Делитель s, m (лоток)", "Splitter s, m (trough)"), "1", L(f"порог {f(WEIR_MM, 0)} мм, две пластины", f"{f(WEIR_MM, 0)} mm weir, two plates")],
+			["6", L("Штуцер в дно 8 мм", "Bulkhead fitting 8 mm"), "3", L("аквариумный, с прокладками", "aquarium type, with gaskets")],
+			["7", L("Аквариумный краник 8 мм", "Aquarium valve 8 mm"), "3", L(f"G, I, X; на {f(VALVE_DROP_CM, 0)} см ниже дна баков", f"G, I, X; {f(VALVE_DROP_CM, 0)} cm below tank bottoms")],
+			["8", L("Трубка силикон 8 мм, тройники", "Silicone tube 8 mm, tees"), "~5 " + L("м", "m"), L("пищевая, мягкая", "food grade, soft")],
+			["9", L("Датчик HC-SR04", "HC-SR04 sensor"), "1", L("над нижним баком, смотрит вниз", "above the bottom tank, looking down")],
+			["10", "Arduino Nano + MOSFET", "1", L("IRLZ44N (логический затвор), диод 1N4007 на помпе", "IRLZ44N (logic level), 1N4007 diode across the pump")],
+			["11", L("Блок питания 12 В 2 А", "12 V 2 A power supply"), "1", L("закрытый, подальше от воды", "enclosed, away from water")],
+			["12", L("Щит фанера 80 × 75 см", "Plywood board 80 × 75 cm"), "1", L("полка, ножки, стяжки, хомуты", "shelf, feet, cable ties, clamps")],
+		], [12, 78, 20, 157]),
+		Spacer(1, 2 * mm),
+		p(L("Ещё: пищевой краситель, мерный стакан 250 мл, секундомер (телефон), пузырьковый уровень, губка.",
+			"Also: food colouring, a 250 ml measuring cup, a stopwatch (phone), a spirit level, a sponge."), small),
+		CondPageBreak(70 * mm),
+		p(L("Делители t, s, m", "Splitters t, s, m"), h2),
+		p(L(f"Это главная хитрость машины Филлипса. Вода переливается через ровный горизонтальный край шириной "
+			f"{f(WEIR_MM, 0)} мм, и вертикальная пластина делит этот край: доля потока = доля ширины. Сделайте лоток из "
+			"пищевого контейнера: в стенке прорежьте окно и приклейте по его низу ровную полоску пластика — это порог. "
+			"Пластины из пластика 1 мм ходят в прорезях, за порогом каждая часть стекает в свой шланг.",
+			f"This is the key trick of the Phillips machine. Water spills over a straight horizontal edge {f(WEIR_MM, 0)} mm "
+			"wide, and a vertical plate divides the edge: the share of the flow = the share of the width. Make the trough "
+			"from a food container: cut a window in the wall and glue a straight plastic strip along its bottom — the weir. "
+			"1 mm plastic plates slide in slots; behind the weir each part drains into its own hose.")),
+		p(L("Порог должен стоять строго горизонтально (проверьте уровнем), а вода перед ним — успокоиться: положите в "
+			"лоток кусок губки под струю из шланга.",
+			"The weir must be perfectly level (check with a spirit level), and the water in front of it must be calm: put a "
+			"piece of sponge under the jet from the hose.")),
+		table([
+			[L("Рычаг", "Lever"), L("Пластина от левого края", "Plate from the left edge"), L("По умолчанию", "Default"), L("Пресеты", "Presets")],
+			["t", f"t · {f(WEIR_MM, 0)} " + L("мм", "mm"), f"{f(0.25 * WEIR_MM)} " + L("мм", "mm"),
+			 L(f"стимулирование {f(0.18 * WEIR_MM)}, экономия {f(0.38 * WEIR_MM)}", f"stimulus {f(0.18 * WEIR_MM)}, austerity {f(0.38 * WEIR_MM)}")],
+			["s", L(f"первая пластина: s · {f(WEIR_MM, 0)} мм", f"first plate: s · {f(WEIR_MM, 0)} mm"), f"{f(0.15 * WEIR_MM)} " + L("мм", "mm"),
+			 L(f"рецессия {f(0.32 * WEIR_MM)}", f"recession {f(0.32 * WEIR_MM)}")],
+			["m", L(f"вторая пластина: ещё m · {f(WEIR_MM, 0)} мм", f"second plate: another m · {f(WEIR_MM, 0)} mm"), f"{f(0.15 * WEIR_MM)} " + L("мм", "mm"), "—"],
+		], [24, 85, 40, 118]),
+		CondPageBreak(60 * mm),
+		p(L("Краники G, I, X: почти постоянный отток", "Valves G, I, X: nearly constant outflow"), h2),
+		p(L(f"В модели госрасходы, инвестиции и экспорт не зависят от уровня в баке. На стенде этого добиваются высотой: "
+			f"краник ставится на {f(VALVE_DROP_CM, 0)} см ниже дна своего бака, и напор меняется только от "
+			f"{f(VALVE_DROP_CM, 0)} до {f(VALVE_DROP_CM + TANK_H_CM, 0)} см. Расход растёт как корень из напора, так что у "
+			f"полного бака он лишь в {f(head, 2)} раза больше, чем у пустого.",
+			f"In the model spending, investment and exports do not depend on the tank level. On the rig this is done with "
+			f"height: each valve sits {f(VALVE_DROP_CM, 0)} cm below its tank bottom, so the head only changes from "
+			f"{f(VALVE_DROP_CM, 0)} to {f(VALVE_DROP_CM + TANK_H_CM, 0)} cm. Flow grows as the square root of head, so with "
+			f"a full tank it is only {f(head, 2)} times the flow of an empty one.")),
+		p(L("Выставляйте краник при половине бака: подставьте мерный стакан на 15 секунд и крутите, пока не наберётся "
+			"нужный объём из таблицы.",
+			"Set a valve with the tank half full: hold the measuring cup under it for 15 seconds and turn until it collects "
+			"the volume from the table.")),
+	]
+	rows = [[L("Краник", "Valve"), L("Значение в модели", "Model value"), L("мл/мин", "ml/min"), L("мл за 15 с", "ml in 15 s")]]
+	for name, val in [("G", 20), ("G", 50), ("G", 85), ("X", 8), ("X", 22), ("X", 40)]:
+		rows.append([name, f"{name} = {val}", f(ml_min(val), 0), f(ml_min(val) / 4, 0)])
+	for r in (0.0, 1.5, 4.0, 9.0, 12.0):
+		i = Economy.INV_MAX * math.exp(-Economy.INV_R_SENS * r)
+		rows.append(["I", f"r = {f(r)} % → I = {f(i)}" if LANG == "ru" else f"r = {f(r)}% → I = {f(i)}", f(ml_min(i), 0), f(ml_min(i) / 4, 0)])
+	s += [
+		table(rows, [25, 90, 50, 50]),
+		Spacer(1, 2 * mm),
+		p(L("Ставку r на стенде «поворачивают» краником I: отметьте на нём положения для разных r по этой таблице.",
+			"On the rig the rate r is “turned” with valve I: mark its positions for different r using this table."), small),
+		CondPageBreak(60 * mm),
+		p(L("Насос: подача пропорциональна воде в нижнем баке", "Pump: output proportional to the water in the bottom tank"), h2),
+		p(L("Обычная помпа гонит почти постоянный поток. Чтобы получился мультипликатор, подача должна расти с уровнем "
+			"в нижнем баке, как в модели: Y = 0,5 · уровень. Это делает Arduino: датчик HC-SR04 меряет уровень, а "
+			f"MOSFET меняет ШИМ помпы. На стенде Y [мл/с] = 0,05 · вода [мл] — например, при рычагах по умолчанию "
+			f"около {f(y_l_h, 0)} л/ч.",
+			"An ordinary pump gives a nearly constant flow. For the multiplier to appear, output must grow with the bottom "
+			"tank level, as in the model: Y = 0.5 · level. Arduino does this: the HC-SR04 measures the level and the "
+			f"MOSFET changes the pump PWM. On the rig Y [ml/s] = 0.05 · water [ml] — e.g. about {f(y_l_h, 0)} L/h with the "
+			"default levers.")),
+		p(L("Скетч — <b>phillips_pump.ino</b>: в архиве с программой (папка phillips_pump), на GitHub — "
+			f"{sketch_link()}, полный текст — в приложении в конце инструкции. Он раз в секунду пишет в порт строку "
+			"t_s, level_cm, water_ml, y_ml_s, pwm — её можно открыть в «Плоттере по последовательному порту» Arduino IDE. "
+			"Кнопка на D2 включает и выключает насос.",
+			"The sketch is <b>phillips_pump.ino</b>: in the program archive (phillips_pump folder), on GitHub — "
+			f"{sketch_link()}, full text in the appendix at the end of this manual. Once a second it writes t_s, level_cm, "
+			"water_ml, y_ml_s, pwm to the serial port — open it in the Arduino IDE Serial Plotter. A button on D2 turns "
+			"the pump on and off.")),
+		p(L(f"Под помпой всегда должно оставаться {f(SUMP_DEAD_ML, 0)} мл «мёртвого» запаса, иначе она хватает воздух. "
+			"В модель он не входит: скетч вычитает его из объёма.",
+			f"There must always be a {f(SUMP_DEAD_ML, 0)} ml “dead” reserve under the pump, otherwise it sucks air. "
+			"It is not part of the model: the sketch subtracts it from the volume.")),
+		p(L("<b>Безопасность.</b> Только 12 В у воды; блок питания — в закрытом корпусе и выше уровня воды; диод "
+			"параллельно помпе обязателен.",
+			"<b>Safety.</b> Only 12 V near water; the power supply enclosed and above the water level; the diode across "
+			"the pump is a must.")),
+		CondPageBreak(80 * mm),
+		p(L("Калибровка и первый запуск", "Calibration and first run"), h2),
+		*steps([
+			L("Соберите всё «сухим», выставьте пороги делителей уровнем. Проверьте, что ни один шланг не поднимается "
+			  "выше своего бака — иначе получится сифон.",
+			  "Assemble everything dry, level the splitter weirs. Make sure no hose rises above its tank — otherwise "
+			  "you get a siphon."),
+			L("Помпа: в скетче временно ставьте ШИМ 80, 120, 160, 200, 255 и меряйте подачу стаканом на высоту щита. "
+			  "Подставьте в скетч PUMP_MAX_ML_S (подача при 255) и PWM_MIN (с какого ШИМ помпа начинает качать).",
+			  "Pump: temporarily set PWM to 80, 120, 160, 200, 255 in the sketch and measure the output with the cup at "
+			  "board height. Put PUMP_MAX_ML_S (output at 255) and PWM_MIN (where the pump starts pumping) into the sketch."),
+			L("Датчик: измерьте линейкой расстояние от датчика до дна нижнего бака и впишите в SENSOR_TO_BOTTOM_CM. "
+			  "Налейте 1 л — в порту должно быть level_cm ≈ 5.",
+			  "Sensor: measure the distance from the sensor to the bottom tank's floor and put it into SENSOR_TO_BOTTOM_CM. "
+			  "Pour in 1 L — the serial port should show level_cm ≈ 5."),
+			L(f"Залейте воду как после «Сброса»: нижний бак {f(e0.sump * ML_PER_UNIT + SUMP_DEAD_ML, 0)} мл "
+			  f"(с запасом), казна, сбережения и иностранные балансы — по {f(e0.treasury * ML_PER_UNIT, 0)} мл. Всего "
+			  f"{f((Economy.TOTAL_WATER * ML_PER_UNIT + SUMP_DEAD_ML) / 1000)} л. Подкрасьте воду.",
+			  f"Fill as after a Reset: bottom tank {f(e0.sump * ML_PER_UNIT + SUMP_DEAD_ML, 0)} ml (with the reserve), "
+			  f"Treasury, idle and foreign balances {f(e0.treasury * ML_PER_UNIT, 0)} ml each. Total "
+			  f"{f((Economy.TOTAL_WATER * ML_PER_UNIT + SUMP_DEAD_ML) / 1000)} L. Colour the water."),
+			L("Выставьте пластины и краники по таблицам для рычагов по умолчанию, включите насос и подождите "
+			  "10 минут — уровни должны почти перестать меняться (в программе это 60 с).",
+			  "Set the plates and valves from the tables for the default levers, start the pump and wait 10 minutes — "
+			  "levels should nearly stop changing (60 s in the program)."),
+			L("Теперь повторяйте опыты и задачи из разделов 6 и 7, сравнивая уровни баков с экраном «Схема сборки». "
+			  "Расхождение в 10–20 % — нормально: делители и краники неидеальны.",
+			  "Now repeat the experiments and problems from sections 6 and 7, comparing the tank levels with the “Build "
+			  "scheme” screen. A 10–20% difference is normal: splitters and valves are not perfect."),
+		]),
+	]
+	return s
+
+
+def sketch_appendix() -> list:
+	return [
+		PageBreak(),
+		p(L("Приложение. Скетч Arduino для насоса", "Appendix. Arduino pump sketch"), h1),
+		p(L(f"Файл phillips_pump.ino — в архиве с программой и на GitHub: {sketch_link()}. В Arduino IDE файл должен "
+			"лежать в папке с тем же именем: phillips_pump/phillips_pump.ino. Перед загрузкой подставьте "
+			"SENSOR_TO_BOTTOM_CM, PUMP_MAX_ML_S и PWM_MIN (раздел «Калибровка и первый запуск»).",
+			f"File phillips_pump.ino is in the program archive and on GitHub: {sketch_link()}. In the Arduino IDE the file "
+			"must be in a folder with the same name: phillips_pump/phillips_pump.ino. Before uploading, set "
+			"SENSOR_TO_BOTTOM_CM, PUMP_MAX_ML_S and PWM_MIN (section “Calibration and first run”). "
+			"Comments in the sketch are in Russian."), small),
+		Spacer(1, 2 * mm),
+		Preformatted(SKETCH.read_text(encoding="utf-8").rstrip(), code),
+	]
+
+
 def footer(canvas, doc) -> None:
 	canvas.saveState()
 	canvas.setFont("Arial", 9 * FONT_K)
@@ -718,6 +925,8 @@ def story() -> list:
 			"economy is nearly balanced with the default levers. The real MONIAC had more feedback loops — e.g. the "
 			"interest rate depended on the idle-balances level; here r is set by a lever."), small),
 		*problems(),
+		*diy_section(),
+		*sketch_appendix(),
 	]
 	return s
 

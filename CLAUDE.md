@@ -26,6 +26,14 @@ tanks for Treasury, idle balances (savings), foreign balances and the expenditur
 - `economy.gd` (`class_name Economy`) — the model only, no rendering; tested headless.
 - `machine_view.gd` (`class_name MachineView`) — `_draw()` of tanks, pipes with moving dots, valves, labels,
   in design coordinates `DESIGN` (1160×760) scaled to the control (≈1.09); its font sizes are in design units. Series colours `COL_*` are shared with the chart.
+- `diy_rig.gd` (`class_name DiyRigView`) — "Build scheme" view of a home-built rig (menu `view`, V / L3, launch arg
+  `-- --view=diy`); same `econ`, shown instead of `MachineView`. Physical constants (`ML_PER_UNIT` 2, `TIME_SCALE` 10,
+  tank/sump areas, `WEIR_MM` 60, `VALVE_DROP_CM` 40, `PUMP_MAX_L_H` 240) and static converters `level_cm`,
+  `flow_ml_min`, `plate_mm`, `pump_pwm`, `head_ratio` — mirrored in `docs/build_instruction.py` (section 8) and
+  `diy/phillips_pump/phillips_pump.ino` (sump area, dead volume, `PUMP_K_PER_S` = PUMP_K / TIME_SCALE). Part numbers
+  1–12 on the drawing = parts table in the manual; keep them in sync. Screenshot: `docs/diy_<lang>.png` (`--view=diy`).
+  The manual links the sketch on GitHub (`SKETCH_URL`, main branch) and prints it in full as the last appendix
+  (`sketch_appendix()`, Consolas) — rerun the script after editing the .ino. Release zip has it in `phillips_pump/`.
 - `chart.gd` (`class_name FlowChart`) — Y, C, I, G over the last `MAX_POINTS` samples; legend in two columns under the
   title says what each letter means in real life (`SERIES[i][2]`).
 - `docs/screen_<lang>.png` — README and manual title screenshots:
@@ -50,10 +58,11 @@ tanks for Treasury, idle balances (savings), foreign balances and the expenditur
 ## Controls
 Focus navigation (D-pad / left stick / arrows / Tab), ←/→ on a slider = 1/40 of its range, A/Enter presses.
 Actions created in `_setup_input()`: `toggle_pause` (X, Space — handled in `_input` before the GUI), `toggle_help` (Y, F1),
-`toggle_pump` (Start, P), `toggle_lang` (Select, L), `speed_down`/`speed_up` (LB/RB, [ ]), `reset_sim` (R), `open_pdf` (O).
+`toggle_pump` (Start, P), `toggle_lang` (Select, L), `speed_down`/`speed_up` (LB/RB, [ ]), `reset_sim` (R), `open_pdf` (O),
+`toggle_view` (L3, V).
 
 ## Tests
-- `tests/run_tests.gd` — headless suite (model, presets, sliders, menu, pause, manual pages/PDFs, language, translations):
+- `tests/run_tests.gd` — headless suite (model, presets, sliders, menu, pause, build scheme conversions, manual pages/PDFs, language, translations):
   `godot --headless --path . --import` then `godot --headless --path . -s tests/run_tests.gd` (exit 0 = pass).
   Add a check there for every new feature; keep it render-free so it runs in CI.
 
@@ -62,7 +71,7 @@ Actions created in `_setup_input()`: `toggle_pause` (X, Space — handled in `_i
   then `.github/scripts/test_and_build.sh`: import → tests → `--export-release "Windows Desktop"`.
 - `.github/workflows/release.yml` — when a PR is **merged into `main`**: bumps the version from the latest
   `vX.Y.Z` tag, writes it into `application/config/version`, re-runs tests + export, zips
-  `PhillipsMachine.exe` + both PDFs + README, creates tag `vX.Y.Z` and a GitHub Release. First release is `v0.1.0`.
+  `PhillipsMachine.exe` + both PDFs + README + `phillips_pump/phillips_pump.ino`, creates tag `vX.Y.Z` and a GitHub Release. First release is `v0.1.0`.
 
 ### Release rules for Claude
 - Never create tags or releases by hand and never edit `config/version` in `project.godot` — it stays `"dev"`.

@@ -138,6 +138,24 @@ func _initialize() -> void:
 	main._press_menu("pause")
 	_check(not main.paused, "«Пуск» снимает паузу")
 
+	print("Схема сборки")
+	_check(is_equal_approx(DiyRigView.level_cm("treasury", 625.0), 10.0), "бак 2 л: 625 ед. = 1250 мл = 10 см")
+	_check(is_equal_approx(DiyRigView.level_cm("sump", 0.0), DiyRigView.SUMP_DEAD_ML / DiyRigView.SUMP_AREA_CM2),
+			"нижний бак: мёртвый запас под помпой входит в уровень")
+	_check(DiyRigView.level_cm("treasury", Economy.TOTAL_WATER) <= DiyRigView.TANK_H_CM
+			and DiyRigView.level_cm("sump", Economy.TOTAL_WATER) <= DiyRigView.SUMP_H_CM, "любой бак вмещает всю воду")
+	_check(is_equal_approx(DiyRigView.flow_ml_min(50.0), 600.0), "G = 50 → 600 мл/мин")
+	_check(is_equal_approx(DiyRigView.plate_mm(0.25), 15.0), "t = 0,25 → пластина 15 мм")
+	_check(is_equal_approx(DiyRigView.pump_pwm(200.0), 60.0), "Y = 200 → 144 л/ч = 60 % ШИМ")
+	_check(DiyRigView.head_ratio() < 1.2, "краник на 40 см ниже: расход меняется < 20 %")
+	main._press_menu("view")
+	_check(main.diy.visible and not main.view.visible and main.menu["view"].text == "Схема машины", "кнопка «Схема сборки»")
+	main._unhandled_input(_action("toggle_view"))
+	_check(not main.diy.visible and main.view.visible, "V / L3 — обратно к схеме машины")
+	_check(InputMap.action_has_event("toggle_view", PhillipsMachine._joy(JOY_BUTTON_LEFT_STICK)), "L3 привязан к схеме")
+	# Скетч кладётся в релизный архив и печатается приложением к инструкции.
+	_check(FileAccess.file_exists("res://diy/phillips_pump/phillips_pump.ino"), "скетч Arduino на месте")
+
 	print("Инструкция")
 	main._unhandled_input(_action("toggle_help"))
 	_check(main.help.visible, "F1 / Y открывает инструкцию")
