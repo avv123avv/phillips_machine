@@ -31,7 +31,9 @@ tanks for Treasury, idle balances (savings), foreign balances and the expenditur
   `godot --path . --write-movie x.png --fixed-fps 10 --quit-after 200 -- --lang=en`, take the last frame.
 - `docs/build_instruction.py` → `docs/instruction_{ru,en}.pdf` (A4 landscape) + `docs/pages/<lang>/page_N.png` (1054 px high).
   Every text is an `L(ru, en)` pair, `f()` formats numbers per language, `FONT_K` = 1.4. Scenario numbers come from
-  `class Economy` there — a Python copy of `economy.gd`; keep the two in sync. After changing the model, presets or the
+  `class Economy` there — a Python copy of `economy.gd`; keep the two in sync. Section 7 = problems (`problems()`,
+  one page each via `problem()`: task, table Quantity / Calculation / On the machine, solution with numbers from
+  `trace(changes)` = snapshots after `warmed_up()`); each must fit on one page — check the PNGs after edits. After changing the model, presets or the
   screen, retake the screenshots, rerun `python docs/build_instruction.py` (`pip install reportlab pypdfium2`), then
   `godot --headless --path . --import`. CI does not regenerate them (needs Windows fonts).
 

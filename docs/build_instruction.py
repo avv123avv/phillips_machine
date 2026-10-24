@@ -6,6 +6,7 @@
 Картинка на титуле — docs/screen_<lang>.png (скриншот программы на этом языке).
 Числа в сценариях считает класс Economy ниже — копия economy.gd; меняете модель — меняйте обе.
 """
+import copy
 import math
 from pathlib import Path
 
@@ -45,6 +46,8 @@ h2 = ParagraphStyle("h2", parent=body, fontName="Arial-Bold", fontSize=14 * FONT
 title = ParagraphStyle("title", parent=h1, fontSize=26 * FONT_K, leading=31 * FONT_K, alignment=TA_CENTER, spaceAfter=4 * FONT_K)
 subtitle = ParagraphStyle("subtitle", parent=body, fontSize=14 * FONT_K, leading=18 * FONT_K, alignment=TA_CENTER, textColor=colors.HexColor("#555"))
 caption = ParagraphStyle("caption", parent=small, alignment=TA_CENTER, textColor=colors.HexColor("#555"))
+# Текст задач: чуть плотнее, чтобы каждая помещалась на страницу.
+tight = ParagraphStyle("tight", parent=body, fontSize=11.5 * FONT_K, leading=14.5 * FONT_K, spaceAfter=4 * FONT_K)
 formula = ParagraphStyle("formula", parent=body, alignment=TA_CENTER, fontName="Arial-Bold", spaceBefore=2 * FONT_K, spaceAfter=6 * FONT_K)
 
 # Текущий язык сборки; меняется в main.
@@ -183,6 +186,269 @@ def time_until(e: Economy, cond, limit: float = 600.0, dt: float = 0.1) -> float
 
 
 # --- Текст -------------------------------------------------------------------
+
+# --- Задачи ------------------------------------------------------------------
+
+def trace(changes: dict, times: tuple = (5, 10, 20, 30, 60, 120, 300)) -> tuple[float, dict]:
+	"""Старт — warmed_up(), затем рычаги changes. Возвращает Y* и снимки модели в моменты times (с)."""
+	e = warmed_up()
+	for k, v in changes.items():
+		setattr(e, k, v)
+	y_star = e.equilibrium_y()
+	snaps: dict = {}
+	t0 = 0.0
+	for t in times:
+		e.advance(t - t0)
+		t0 = t
+		snaps[t] = copy.copy(e)
+	return y_star, snaps
+
+
+def problem(title_: str, task: str, setup: list[list[str]], solution: list[str]) -> list:
+	out = [PageBreak(), p(title_, h2), p(L("<b>Постановка.</b> ", "<b>Problem.</b> ") + task, tight),
+		   table([[L("Величина", "Quantity"), L("Расчёт", "Calculation"), L("На машине", "On the machine")]] + setup,
+				 [52, 110, 105]), Spacer(1, 2 * mm)]
+	out += [p((L("<b>Решение.</b> ", "<b>Solution.</b> ") if i == 0 else "") + t, tight) for i, t in enumerate(solution)]
+	return out
+
+
+def problems() -> list:
+	e0 = warmed_up()
+	k0 = e0.multiplier()
+	sec = L(" с", " s")
+	s: list = [
+		CondPageBreak(90 * mm),
+		p(L("7. Задачи: от реальной ситуации к рычагам машины", "7. Problems: from a real situation to the machine's levers"), h1),
+		p(L("Каждая задача начинается с одного и того же состояния: «Сброс», затем минута при рычагах по умолчанию "
+			f"(Y ≈ {f(e0.y, 0)}, казначейство ≈ {f(e0.treasury, 0)}, сбережения ≈ {f(e0.idle, 0)}, иностранные балансы ≈ "
+			f"{f(e0.foreign, 0)}). Потом меняются рычаги, время отсчитывается от этого момента, скорость ×1. "
+			"Все числа посчитаны той же моделью, что в программе, — их можно проверить на экране.",
+			"Every problem starts from the same state: Reset, then a minute with the default levers "
+			f"(Y ≈ {f(e0.y, 0)}, Treasury ≈ {f(e0.treasury, 0)}, idle balances ≈ {f(e0.idle, 0)}, foreign balances ≈ "
+			f"{f(e0.foreign, 0)}). Then the levers are changed, time is counted from that moment, speed ×1. "
+			"All numbers come from the same model as the program — you can check them on screen.")),
+		p(L("<b>Общий порядок.</b> 1) Перевести событие на язык рычагов: что изменилось — налоги, расходы, ставка, "
+			"склонности, экспорт. 2) Посчитать равновесие Y* = (G + I + X)·k — это ответ «на короткий срок». "
+			"3) Посмотреть, какие баки при этом пустеют или переполняются: из-за них равновесие со временем "
+			"сдвигается — это ответ «на долгий срок». Экономические единицы здесь условные: важны направления и "
+			"пропорции, а не абсолютные числа.",
+			"<b>General procedure.</b> 1) Translate the event into levers: what changed — taxes, spending, the rate, "
+			"propensities, exports. 2) Compute the equilibrium Y* = (G + I + X)·k — the “short run” answer. "
+			"3) Watch which tanks drain or overfill meanwhile: they shift the equilibrium over time — the “long run” "
+			"answer. The units are notional: directions and proportions matter, not absolute numbers.")),
+	]
+
+	# 1. Снижение налогов
+	ys, tr = trace({"t": 0.20})
+	t_drain = next(t for t in tr if tr[t].gov < 49.0)
+	s += problem(
+		L("Задача 1. Снижение налогов (США, 1964)", "Problem 1. A tax cut (USA, 1964)"),
+		L("В 1964 году в США по плану администрации Кеннеди снизили подоходный налог, чтобы подстегнуть рост. "
+		  "Госрасходы не сокращали. Насколько вырастет доход? Окупится ли снижение — вырастут ли налоговые "
+		  "поступления? Что будет с казной?",
+		  "In 1964 the USA cut income tax, following the Kennedy administration's plan, to speed up growth. "
+		  "Spending was not cut. How much will income grow? Does the cut pay for itself — will tax revenue rise? "
+		  "What happens to the Treasury?"),
+		[
+			[L("Изменение", "Change"), L("Ставка налога 0,25 → 0,20", "Tax rate 0.25 → 0.20"), L("слайдер t = 0,20", "slider t = 0.20")],
+			[L("Мультипликатор", "Multiplier"), f"k = 1 / (1 − 0,80·0,70) = {f(1 / (1 - 0.8 * 0.7), 2)}" if LANG == "ru"
+			 else f"k = 1 / (1 − 0.80·0.70) = {f(1 / (1 - 0.8 * 0.7), 2)}", L("строка «Мультипликатор»", "“Multiplier” line")],
+			[L("Равновесие", "Equilibrium"), f"Y* = ({f(e0.g, 0)} + {f(e0.inv)} + {f(e0.x, 0)})·k = {f(ys)}", L("строка «Равновесный Y*»", "“Equilibrium Y*” line")],
+			[L("Налоги", "Taxes"), f"T = 0,20 · {f(ys)} = {f(0.2 * ys)}" if LANG == "ru" else f"T = 0.20 · {f(ys)} = {f(0.2 * ys)}",
+			 L(f"было {f(e0.tax)}", f"was {f(e0.tax)}")],
+			[L("Смотрим", "Watch"), L("Бюджет T − G и уровень казначейства", "Budget T − G and the Treasury level"), L("сводка, бак слева", "summary, left tank")],
+		],
+		[
+			L(f"Доход быстро растёт: через 10 с Y = {f(tr[10].y)}, к 20 с — {f(tr[20].y)}, почти Y* = {f(ys)}. "
+			  f"Но налоги падают с {f(e0.tax)} до {f(tr[20].tax)}: рост дохода не покрывает снижения ставки, "
+			  f"бюджет уходит в дефицит T − G = {f(tr[20].tax - tr[20].gov)}.",
+			  f"Income rises quickly: Y = {f(tr[10].y)} after 10 s and {f(tr[20].y)} by 20 s, almost Y* = {f(ys)}. "
+			  f"But taxes fall from {f(e0.tax)} to {f(tr[20].tax)}: income growth does not make up for the lower rate, "
+			  f"the budget goes into deficit T − G = {f(tr[20].tax - tr[20].gov)}."),
+			L(f"Дефицит оплачивается из казны: её уровень падает с {f(e0.treasury, 0)} до {f(tr[30].treasury, 0)} за 30 с. "
+			  f"Примерно к {t_drain}-й секунде бак почти пуст, клапан G пережимается до уровня налогов, и доход "
+			  f"падает: через минуту Y = {f(tr[60].y)}, через 5 минут — {f(tr[300].y)}, <b>ниже исходного</b>.",
+			  f"The deficit is paid from the Treasury: its level falls from {f(e0.treasury, 0)} to {f(tr[30].treasury, 0)} in 30 s. "
+			  f"By about second {t_drain} the tank is nearly empty, the G valve is choked down to tax income and income "
+			  f"falls: Y = {f(tr[60].y)} after a minute and {f(tr[300].y)} after 5 minutes, <b>below the start</b>."),
+			L("Вывод: снижение налогов разгоняет доход, пока есть чем платить. Без сокращения расходов или займов "
+			  "(в машине их нет — только запас в казначействе) эффект временный.",
+			  "Conclusion: a tax cut boosts income while there is money to pay for it. Without spending cuts or borrowing "
+			  "(the machine has none — only the Treasury's reserve) the effect is temporary."),
+		],
+	)
+
+	# 2. Экспортный бум
+	ys, tr = trace({"x": 40.0})
+	peak = max(tr.values(), key=lambda q: q.y)
+	s += problem(
+		L("Задача 2. Экспортный бум (Новая Зеландия, 1950–1951)", "Problem 2. An export boom (New Zealand, 1950–1951)"),
+		L("Во время Корейской войны мировые цены на шерсть — главный экспорт Новой Зеландии, родины Филлипса, — "
+		  "выросли в несколько раз. Экспортная выручка резко выросла. Как изменится доход и надолго ли?",
+		  "During the Korean War world wool prices — the main export of New Zealand, Phillips's home country — "
+		  "rose several times over. Export earnings jumped. How does income change, and for how long?"),
+		[
+			[L("Изменение", "Change"), L("Экспорт 22 → 40", "Exports 22 → 40"), L("слайдер X = 40", "slider X = 40")],
+			[L("Равновесие", "Equilibrium"), f"Y* = ({f(e0.g, 0)} + {f(e0.inv)} + 40)·{f(k0, 2)} = {f(ys)}", f"+{f(ys - e0.y)}"],
+			[L("Импорт", "Imports"), f"M = m·(1 − t)·Y* = {f(0.15 * 0.75 * ys)}", L("меньше X — сальдо в плюсе", "less than X — trade surplus")],
+			[L("Смотрим", "Watch"), L("Уровень иностранных балансов, сальдо X − M", "Foreign balances level, X − M"), L("бак справа, сводка", "right tank, summary")],
+		],
+		[
+			L(f"Доход растёт быстро: максимум Y ≈ {f(peak.y)} около {f(peak.time - 60, 0)}-й секунды. Но вода для "
+			  f"экспорта берётся из бака иностранных балансов — это деньги, которые иностранцы накопили, покупая наш импорт. "
+			  f"X = 40 при M ≈ {f(tr[10].imp)}: бак пустеет с {f(e0.foreign, 0)} до {f(tr[20].foreign, 0)} за 20 с.",
+			  f"Income rises fast: the peak Y ≈ {f(peak.y)} at about second {f(peak.time - 60, 0)}. But water for exports "
+			  f"comes from the foreign balances tank — money foreigners collected by selling us imports. X = 40 with "
+			  f"M ≈ {f(tr[10].imp)}: the tank drops from {f(e0.foreign, 0)} to {f(tr[20].foreign, 0)} in 20 s."),
+			L(f"Когда бак почти пуст, экспорт ограничен импортом: X = M ≈ {f(tr[60].exp_)} через минуту. Доход "
+			  f"возвращается: {f(tr[30].y)} через 30 с, {f(tr[120].y)} через 2 минуты. Зато бум оставил след в казне: "
+			  f"на волне высоких доходов она выросла с {f(e0.treasury, 0)} до {f(tr[120].treasury, 0)}.",
+			  f"Once the tank is nearly empty, exports are limited by imports: X = M ≈ {f(tr[60].exp_)} after a minute. "
+			  f"Income comes back down: {f(tr[30].y)} after 30 s, {f(tr[120].y)} after 2 minutes. But the boom left a mark "
+			  f"in the Treasury: riding on high incomes it grew from {f(e0.treasury, 0)} to {f(tr[120].treasury, 0)}."),
+			L("Вывод: сырьевой бум даёт быстрый, но временный рост; долго держать сальдо в плюсе можно, только пока "
+			  "у остального мира есть чем платить. Разумно отложить часть выручки — что здесь и сделала казна.",
+			  "Conclusion: a commodity boom gives fast but temporary growth; a trade surplus lasts only while the rest "
+			  "of the world has money to pay. It is wise to put part of the windfall aside — as the Treasury did here."),
+		],
+	)
+
+	# 3. Шок Волкера
+	ys, tr = trace({"r": 12.0})
+	i_new = 45.0 * math.exp(-0.15 * 12)
+	s += problem(
+		L("Задача 3. Дорогие деньги (ФРС, 1979–1981)", "Problem 3. Tight money (the Fed, 1979–1981)"),
+		L("Чтобы сбить инфляцию, ФРС США под руководством Пола Волкера подняла ставки почти до 20 %. "
+		  "Что случится с инвестициями и доходом? Куда денутся деньги?",
+		  "To break inflation, the US Federal Reserve under Paul Volcker raised rates to nearly 20%. "
+		  "What happens to investment and income? Where does the money go?"),
+		[
+			[L("Изменение", "Change"), L("Ставка 4 % → 12 % (максимум шкалы)", "Rate 4% → 12% (top of the scale)"), L("слайдер r = 12", "slider r = 12")],
+			[L("Инвестиции", "Investment"), f"I = 45·e<super>−0,15·12</super> = {f(i_new)}" if LANG == "ru" else f"I = 45·e<super>−0.15·12</super> = {f(i_new)}",
+			 L(f"было {f(e0.inv)}", f"was {f(e0.inv)}")],
+			[L("Равновесие", "Equilibrium"), f"Y* = ({f(e0.g, 0)} + {f(i_new)} + {f(e0.x, 0)})·{f(k0, 2)} = {f(ys)}", f"{f(ys - e0.y)}"],
+			[L("Смотрим", "Watch"), L("Бак сбережений: S против I", "Idle balances tank: S versus I"), L("средний бак", "middle tank")],
+		],
+		[
+			L(f"Доход падает до Y* за ~20 с: Y = {f(tr[20].y)}. Но сбережения S ≈ {f(tr[20].sav)} теперь больше "
+			  f"инвестиций I = {f(i_new)}: разница оседает в баке сбережений. Он растёт с {f(e0.idle, 0)} до "
+			  f"{f(tr[20].idle, 0)} за 20 с и {f(tr[60].idle, 0)} за минуту.",
+			  f"Income falls to Y* in ~20 s: Y = {f(tr[20].y)}. But saving S ≈ {f(tr[20].sav)} now exceeds investment "
+			  f"I = {f(i_new)}: the difference settles in the idle balances tank. It grows from {f(e0.idle, 0)} to "
+			  f"{f(tr[20].idle, 0)} in 20 s and {f(tr[60].idle, 0)} in a minute."),
+			L(f"Вода, застрявшая в сбережениях, выпала из оборота. Казна (дефицит из-за упавших налогов) и иностранные "
+			  f"балансы пустеют, и доход проваливается ниже равновесия: {f(tr[60].y)} через минуту, {f(tr[300].y)} через 5 минут.",
+			  f"Water stuck in idle balances has left circulation. The Treasury (in deficit because taxes fell) and foreign "
+			  f"balances drain, and income slumps below the equilibrium: {f(tr[60].y)} after a minute, {f(tr[300].y)} after 5 minutes."),
+			L("Вывод: высокая ставка не просто сокращает инвестиции — она заставляет деньги лежать без дела. Так "
+			  "Волкер победил инфляцию ценой тяжёлого спада 1981–1982 годов. Верните r = 4 % и посмотрите, как "
+			  "накопленная вода возвращается в оборот.",
+			  "Conclusion: a high rate does not just cut investment — it makes money sit idle. This is how Volcker beat "
+			  "inflation at the cost of the deep 1981–1982 recession. Set r back to 4% and watch the stored water "
+			  "flow back into circulation."),
+		],
+	)
+
+	# 4. Депрессия и «Новый курс»
+	rec = {"s": 0.32, "r": 9.0, "x": 8.0}
+	ys_rec, tr_rec = trace(rec)
+	tmp = Economy()
+	for k_, v in rec.items():
+		setattr(tmp, k_, v)
+	k_rec = tmp.multiplier()
+	g_need = e0.y / k_rec - tmp.investment_demand() - tmp.x
+	_, tr_g = trace(dict(rec, g=g_need))
+	ys_mix, tr_mix = trace(dict(rec, r=0.0, g=80.0))
+	s += problem(
+		L("Задача 4. Великая депрессия и «Новый курс» (1930-е)", "Problem 4. The Great Depression and the New Deal (1930s)"),
+		L("После краха 1929 года люди и банки копят, кредит дорог, мировая торговля рухнула (пресет «Рецессия»). "
+		  "Какие госрасходы нужны, чтобы вернуть прежний доход? Хватит ли казны? Поможет ли дешёвый кредит?",
+		  "After the 1929 crash people and banks hoard, credit is expensive, world trade has collapsed (the Recession "
+		  "preset). What government spending would restore the previous income? Is the Treasury enough? Does cheap "
+		  "credit help?"),
+		[
+			[L("Спад", "Slump"), L("s = 0,32, r = 9 %, X = 8", "s = 0.32, r = 9%, X = 8"),
+			 L(f"пресет «Рецессия»: Y* = {f(ys_rec)}", f"Recession preset: Y* = {f(ys_rec)}")],
+			[L("Мультипликатор", "Multiplier"), f"k = 1 / (1 − 0,75·0,53) = {f(k_rec, 2)}" if LANG == "ru" else f"k = 1 / (1 − 0.75·0.53) = {f(k_rec, 2)}",
+			 L("утечки выросли — k меньше", "leakages grew — k is smaller")],
+			[L("Нужные G", "Required G"), f"G = {f(e0.y, 0)} / {f(k_rec, 2)} − {f(tmp.investment_demand())} − 8 = {f(g_need, 0)}",
+			 L(f"слайдер G = {f(g_need, 0)}", f"slider G = {f(g_need, 0)}")],
+			[L("Смотрим", "Watch"), L("Казначейство, сбережения, иностранные балансы", "Treasury, idle and foreign balances"), L("все три бака", "all three tanks")],
+		],
+		[
+			L(f"Без вмешательства доход падает до {f(tr_rec[20].y)} за 20 с и {f(tr_rec[60].y)} за минуту — ниже "
+			  f"Y* = {f(ys_rec)}, потому что казна быстро пустеет, а вода копится в сбережениях ({f(tr_rec[60].idle, 0)}).",
+			  f"Without action income falls to {f(tr_rec[20].y)} in 20 s and {f(tr_rec[60].y)} in a minute — below "
+			  f"Y* = {f(ys_rec)}, because the Treasury drains fast and water piles up in idle balances ({f(tr_rec[60].idle, 0)})."),
+			L(f"С G = {f(g_need, 0)} равновесие возвращается к {f(e0.y, 0)}, но дефицит огромен, и казна пуста уже "
+			  f"через несколько секунд (через 5 с осталось {f(tr_g[5].treasury, 0)}). Доход успевает подняться только до "
+			  f"{f(tr_g[5].y)}, через 30 с — снова {f(tr_g[30].y)}.",
+			  f"With G = {f(g_need, 0)} the equilibrium returns to {f(e0.y, 0)}, but the deficit is huge and the Treasury "
+			  f"is empty within seconds ({f(tr_g[5].treasury, 0)} left after 5 s). Income only gets up to {f(tr_g[5].y)}, "
+			  f"and is back to {f(tr_g[30].y)} after 30 s."),
+			L(f"Вместе с дешёвым кредитом (r = 0 %, G = 80) вода уходит из сбережений в инвестиции: Y = {f(tr_mix[10].y)} "
+			  f"через 10 с. Но пока экспорт 8, а импорт больше, вода утекает за границу (иностранные балансы "
+			  f"{f(tr_mix[60].foreign, 0)} через минуту), и доход снова сползает: {f(tr_mix[60].y)}.",
+			  f"Combined with cheap credit (r = 0%, G = 80) water flows from idle balances into investment: Y = {f(tr_mix[10].y)} "
+			  f"after 10 s. But while exports are 8 and imports are larger, water leaks abroad (foreign balances "
+			  f"{f(tr_mix[60].foreign, 0)} after a minute) and income slides again: {f(tr_mix[60].y)}."),
+			L("Вывод: в депрессии одна мера не работает — нужно закрыть все утечки сразу: расходы, ставку и "
+			  "торговлю. Попробуйте подобрать набор рычагов, при котором Y держится около 200 хотя бы 2 минуты.",
+			  "Conclusion: in a depression no single measure works — all the leaks must be closed at once: spending, the "
+			  "rate and trade. Try to find a set of levers that keeps Y near 200 for at least 2 minutes."),
+		],
+	)
+
+	# 5. Сбалансированный бюджет
+	g_new = 70.0
+	lo, hi = 0.0, 0.6
+	for _ in range(60):
+		mid = (lo + hi) / 2
+		tmp = Economy()
+		tmp.t, tmp.g = mid, g_new
+		if mid * tmp.equilibrium_y() > g_new:
+			hi = mid
+		else:
+			lo = mid
+	t_bal = round(lo, 2)
+	ys, tr = trace({"g": g_new, "t": t_bal})
+	s += problem(
+		L("Задача 5. Сбалансированный бюджет (Хаавельмо, 1945)", "Problem 5. A balanced budget (Haavelmo, 1945)"),
+		L("Норвежский экономист Трюгве Хаавельмо показал: если государство тратит больше и ровно столько же "
+		  "собирает налогами, доход всё равно растёт. Поднимите G на 20 и подберите налог t так, чтобы в новом "
+		  "равновесии бюджет остался сбалансированным (T = G). На сколько вырастет доход?",
+		  "The Norwegian economist Trygve Haavelmo showed that if the state spends more and collects exactly as much "
+		  "in taxes, income still grows. Raise G by 20 and pick the tax rate t so that the budget stays balanced "
+		  "(T = G) at the new equilibrium. How much does income grow?"),
+		[
+			[L("Изменение", "Change"), f"G = 50 → {f(g_new, 0)}", L(f"слайдер G = {f(g_new, 0)}", f"slider G = {f(g_new, 0)}")],
+			[L("Условие", "Condition"), "t · Y*(t) = G", L("подбор: t, пока T − G ≈ 0", "adjust t until T − G ≈ 0")],
+			[L("Ответ для t", "Answer for t"), L(f"t ≈ {f(t_bal, 2)} (решение подбором)", f"t ≈ {f(t_bal, 2)} (found by trial)"),
+			 L(f"слайдер t = {f(t_bal, 2)}", f"slider t = {f(t_bal, 2)}")],
+			[L("Равновесие", "Equilibrium"), f"Y* = {f(ys)}", f"+{f(ys - e0.y)}"],
+		],
+		[
+			L(f"Через 20 с Y = {f(tr[20].y)}, бюджет T − G = {f(tr[20].tax - tr[20].gov)}: практически ноль. Доход вырос "
+			  f"на {f(tr[20].y - e0.y)} — почти ровно на прирост расходов (20). Мультипликатор сбалансированного бюджета "
+			  "близок к единице.",
+			  f"After 20 s Y = {f(tr[20].y)}, budget T − G = {f(tr[20].tax - tr[20].gov)}: practically zero. Income grew by "
+			  f"{f(tr[20].y - e0.y)} — almost exactly the extra spending (20). The balanced-budget multiplier is close to one."),
+			L("Почему так: каждая единица налога уменьшает потребление только на долю (1 − s − m), а каждая единица "
+			  "расходов тратится целиком. Разница и запускает мультипликатор.",
+			  "Why: each unit of tax reduces consumption only by the share (1 − s − m), while each unit of spending is "
+			  "spent in full. The difference drives the multiplier."),
+			L(f"Это самый устойчивый из пяти сценариев: через 2 минуты Y = {f(tr[120].y)}. Медленный дрейф дальше "
+			  f"({f(tr[300].y)} через 5 минут) — оттого что t округлено до сотых и бюджет в небольшом дефиците, а импорт "
+			  f"чуть больше экспорта: казна понемногу пустеет ({f(tr[120].treasury, 0)} через 2 минуты), а иностранные "
+			  "балансы наполняются.",
+			  f"This is the most stable of the five scenarios: Y = {f(tr[120].y)} after 2 minutes. The slow drift later "
+			  f"({f(tr[300].y)} after 5 minutes) is because t is rounded to hundredths and the budget runs a small deficit, "
+			  f"while imports are slightly above exports: the Treasury slowly drains ({f(tr[120].treasury, 0)} after 2 minutes) "
+			  "and foreign balances fill up."),
+		],
+	)
+	return s
+
 
 def footer(canvas, doc) -> None:
 	canvas.saveState()
@@ -451,6 +717,7 @@ def story() -> list:
 			"This is a teaching model: the coefficients are chosen so that processes take seconds, not years, and the "
 			"economy is nearly balanced with the default levers. The real MONIAC had more feedback loops — e.g. the "
 			"interest rate depended on the idle-balances level; here r is set by a lever."), small),
+		*problems(),
 	]
 	return s
 
