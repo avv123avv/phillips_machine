@@ -46,9 +46,10 @@ trade balance (X − M).
 | Start | P | pump on / off |
 | Select | L | language |
 | LB / RB | [ / ] | simulation speed ÷2 / ×2 |
+| L3 (left stick press) | V | build scheme / machine scheme |
 | — | R | reset |
 
-The top menu has the same actions as buttons: Pause, ± speed, Pump, Reset, Manual, language.
+The top menu has the same actions as buttons: Pause, ± speed, Pump, Reset, Build scheme, Manual, language.
 
 Sliders: tax rate t, propensity to save s, propensity to import m, government spending G, exports X,
 interest rate r, simulation speed. Presets: **Stimulus** (lower taxes, higher G, cheap money),
@@ -67,6 +68,20 @@ running out, stopping the pump) and five problems from real history: the 1964 US
 pip install reportlab pypdfium2
 python docs/build_instruction.py
 ```
+
+### Build it at home
+
+![Build scheme (English UI)](docs/diy_en.png)
+
+The **Build scheme** button shows a tabletop version of the machine on an 80 × 75 cm board: plastic containers,
+a 12 V aquarium pump, two weir-trough splitters for t and s, m, aquarium valves for G, I, X and an Arduino that
+drives the pump in proportion to the water in the bottom tank, exactly like the model. Parts are numbered, and the
+current levers are shown in physical units (plate positions in mm, valve flows in ml/min, pump PWM, levels in cm
+and ml). Scale: 1 water unit = 2 ml, 1 model second = 10 rig seconds, 2.5 L of water in total.
+
+Section 8 of the manual has the parts list, how to make the splitters, valve and pump calibration tables and the
+first run. The Arduino sketch is [`diy/phillips_pump/phillips_pump.ino`](diy/phillips_pump/phillips_pump.ino)
+(HC-SR04 level sensor, MOSFET PWM, CSV log on the serial port).
 
 ### Tests
 
@@ -122,9 +137,10 @@ Yd = Y − T, потребление C = Yd − S − M сразу возвра�
 | Start | P | насос вкл / выкл |
 | Select | L | язык |
 | LB / RB | [ / ] | скорость симуляции ÷2 / ×2 |
+| L3 (нажатие левого стика) | V | схема сборки / схема машины |
 | — | R | сброс |
 
-В меню сверху те же действия кнопками: Пауза, ± скорость, Насос, Сброс, Инструкция, язык.
+В меню сверху те же действия кнопками: Пауза, ± скорость, Насос, Сброс, Схема сборки, Инструкция, язык.
 
 Слайдеры: налоговая ставка t, склонность к сбережению s, склонность к импорту m, госрасходы G, экспорт X,
 процентная ставка r, скорость симуляции. Пресеты: **Стимулирование** (ниже налоги, выше G, дешёвые деньги),
@@ -144,6 +160,20 @@ Yd = Y − T, потребление C = Yd − S − M сразу возвра�
 pip install reportlab pypdfium2
 python docs/build_instruction.py
 ```
+
+### Собрать дома
+
+![Схема сборки (русский интерфейс)](docs/diy_ru.png)
+
+Кнопка **Схема сборки** показывает настольную версию машины на щите 80 × 75 см: пластиковые контейнеры, помпа
+на 12 В, два лотка-делителя для t и для s, m, аквариумные краники G, I, X и Arduino, которая управляет помпой
+пропорционально воде в нижнем баке — так же, как в модели. Детали пронумерованы, а текущие рычаги показаны в
+физических величинах (положение пластин в мм, расход краников в мл/мин, ШИМ помпы, уровни в см и мл). Масштаб:
+1 единица воды = 2 мл, 1 с модели = 10 с стенда, всего 2,5 л воды.
+
+В разделе 8 инструкции — список деталей, как сделать делители, таблицы калибровки краников и помпы, первый
+запуск. Скетч Arduino — [`diy/phillips_pump/phillips_pump.ino`](diy/phillips_pump/phillips_pump.ino)
+(датчик уровня HC-SR04, ШИМ через MOSFET, CSV в последовательный порт).
 
 ### Тесты
 
