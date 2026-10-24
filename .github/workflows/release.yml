@@ -68,7 +68,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p dist/pkg
-          cp build/PhillipsMachine.exe README.md dist/pkg/
+          cp build/PhillipsMachine.exe docs/instruction_ru.pdf docs/instruction_en.pdf README.md dist/pkg/
           (cd dist/pkg && zip -q -r "../PhillipsMachine-v${VERSION}-windows-x64.zip" .)
           ls -lh dist/
 
@@ -90,9 +90,9 @@ jobs:
             echo "## Установка / Install"
             echo
             echo "Скачайте \`PhillipsMachine-v${VERSION}-windows-x64.zip\`, распакуйте и запустите \`PhillipsMachine.exe\`."
-            echo "Описание модели — в README."
+            echo "Инструкция — F1 в игре или PDF в архиве."
             echo
-            echo "Download the zip, unpack it and run \`PhillipsMachine.exe\`. See README for the model description."
+            echo "Download the zip, unpack it and run \`PhillipsMachine.exe\`. Manual: F1 in the game or the PDF in the archive."
           } > notes.md
           gh release create "v${VERSION}" dist/*.zip \
             --target "$SHA" \
